@@ -1,0 +1,58 @@
+[
+  {
+    "id": "ar.alafasy",
+    "nameArabic": "مشاري راشد العفاسي",
+    "nameEnglish": "Mishary Rashid Alafasy",
+    "style": "Murattal",
+    "audioBaseUrl": "https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/"
+  },
+  {
+    "id": "ar.abdulbasitmurattal",
+    "nameArabic": "عبد الباسط عبد الصمد",
+    "nameEnglish": "Abdul Basit (Murattal)",
+    "style": "Murattal",
+    "audioBaseUrl": "https://cdn.islamic.network/quran/audio-surah/128/ar.abdulbasitmurattal/"
+  },
+  {
+    "id": "ar.husary",
+    "nameArabic": "محمود خليل الحصري",
+    "nameEnglish": "Mahmoud Khalil Al-Husary",
+    "style": "Murattal",
+    "audioBaseUrl": "https://cdn.islamic.network/quran/audio-surah/128/ar.husary/"
+  },
+  {
+    "id": "ar.minshawi",
+    "nameArabic": "محمد صديق المنشاوي",
+    "nameEnglish": "Mohamed Siddiq Al-Minshawi",
+    "style": "Murattal",
+    "audioBaseUrl": "https://cdn.islamic.network/quran/audio-surah/128/ar.minshawi/"
+  },
+  {
+    "id": "ar.mahermuaiqly",
+    "nameArabic": "ماهر المعيقلي",
+    "nameEnglish": "Maher Al-Muaiqly",
+    "style": "Murattal",
+    "audioBaseUrl": "https://cdn.islamic.network/quran/audio-surah/128/ar.mahermuaiqly/"
+  },
+  {
+    "id": "ar.shaatree",
+    "nameArabic": "أبو بكر الشاطري",
+    "nameEnglish": "Abu Bakr Al-Shatri",
+    "style": "Murattal",
+    "audioBaseUrl": "https://cdn.islamic.network/quran/audio-surah/128/ar.shaatree/"
+  },
+  {
+    "id": "ar.sudais",
+    "nameArabic": "عبد الرحمن السديس",
+    "nameEnglish": "Abdul Rahman Al-Sudais",
+    "style": "Murattal",
+    "audioBaseUrl": "https://cdn.islamic.network/quran/audio-surah/128/ar.sudais/"
+  },
+  {
+    "id": "ar.saoodshuraym",
+    "nameArabic": "سعود الشريم",
+    "nameEnglish": "Saud Al-Shuraim",
+    "style": "Murattal",
+    "audioBaseUrl": "https://cdn.islamic.network/quran/audio-surah/128/ar.saoodshuraym/"
+  }
+]
