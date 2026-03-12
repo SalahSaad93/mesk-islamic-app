@@ -1,0 +1,198 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService();
+});
+
+class NotificationService {
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  NotificationService() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    tz.initializeTimeZones();
+
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestSoundPermission: false,
+      requestBadgePermission: false,
+      requestAlertPermission: false,
+    );
+
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+
+    await _flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
+        // Handle notification tap
+      },
+      onDidReceiveBackgroundNotificationResponse: null,
+    );
+  }
+
+  Future<void> requestPermissions() async {
+    await _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+
+    await _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+  }
+
+  Future<void> schedulePrayerNotification({
+    required int id,
+    required String prayerName,
+    required DateTime time,
+    required int minutesBefore,
+  }) async {
+    final notificationTime = time.subtract(Duration(minutes: minutesBefore));
+    if (notificationTime.isBefore(DateTime.now())) return;
+
+    final tz.TZDateTime scheduledDate = tz.TZDateTime.from(notificationTime, tz.local);
+
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'prayer_times_channel',
+      'Prayer Times',
+      channelDescription: 'Notifications for prayer times',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      'Time for $prayerName',
+      minutesBefore == 0
+          ? 'It is time for $prayerName prayer.'
+          : '$prayerName is in $minutesBefore minutes.',
+      scheduledDate,
+      platformChannelSpecifics,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  Future<void> scheduleAthkarReminder({
+    required int id,
+    required String category,
+    required TimeOfDay timeOfDay,
+  }) async {
+    final now = DateTime.now();
+    var scheduledDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      timeOfDay.hour,
+      timeOfDay.minute,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    final tz.TZDateTime tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
+
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'athkar_reminders_channel',
+      'Athkar Reminders',
+      channelDescription: 'Notifications to remind reading Athkar',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      'Athkar Reminder',
+      'Don\'t forget to read your $category athkar!',
+      tzScheduledDate,
+      platformChannelSpecifics,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  Future<void> scheduleDailyVerseNotification({
+    required int id,
+    required TimeOfDay timeOfDay,
+  }) async {
+    final now = DateTime.now();
+    var scheduledDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      timeOfDay.hour,
+      timeOfDay.minute,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    final tz.TZDateTime tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
+
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'daily_verse_channel',
+      'Daily Verse',
+      channelDescription: 'Receive a daily Quranic verse',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      'Verse of the Day',
+      'Tap to read today\'s random verse of the Quran.',
+      tzScheduledDate,
+      platformChannelSpecifics,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  Future<void> cancelNotification(int id) async {
+    await _flutterLocalNotificationsPlugin.cancel(id);
+  }
+
+  Future<void> cancelAll() async {
+    await _flutterLocalNotificationsPlugin.cancelAll();
+  }
+}

@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mesk_islamic_app/l10n/app_localizations.dart';
+
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
-import '../../../../core/widgets/islamic_card.dart';
+import '../../../../core/constants/clay_shadows.dart';
+import '../../../../core/widgets/clay_card.dart';
+import '../providers/settings_provider.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _morningDhikr = true;
-  bool _eveningDhikr = false;
-  bool _surahKahf = false;
-  bool _surahBaqarah = false;
-  bool _darkMode = false;
-  String _language = 'English';
-
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -46,8 +44,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('More', style: AppTextStyles.headlineLarge),
-          Text('Settings and preferences', style: AppTextStyles.bodyMedium),
+          Text(
+            AppLocalizations.of(context)!.moreTab,
+            style: AppTextStyles.sectionTitle,
+          ),
+          Text(
+            AppLocalizations.of(context)!.settingsAndPreferences,
+            style: AppTextStyles.bodyMedium,
+          ),
         ],
       ),
     );
@@ -55,19 +59,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildLanguageSection() {
     return _section(
-      title: 'Language Settings',
+      title: AppLocalizations.of(context)!.languageSettings,
       icon: Icons.language_outlined,
-      iconColor: AppColors.primaryGreen,
+      iconColor: AppColors.primaryAccent,
       children: [
         _SettingsTile(
-          title: 'App Language',
+          title: AppLocalizations.of(context)!.appLanguage,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_language, style: AppTextStyles.bodyMedium),
+              Text(
+                ref.watch(settingsProvider.select((s) => s.language)) == 'ar'
+                    ? 'Arabic'
+                    : 'English',
+                style: AppTextStyles.bodyMedium,
+              ),
               const SizedBox(width: 4),
-              const Icon(Icons.keyboard_arrow_down,
-                  color: AppColors.textLight),
+              const Icon(
+                Icons.keyboard_arrow_down,
+                color: AppColors.textTertiary,
+              ),
             ],
           ),
           onTap: () => _showLanguagePicker(),
@@ -77,6 +88,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSunnahSection() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 400;
+    
     final sunnah = [
       (
         'Surat Al-Kahf',
@@ -84,7 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'كهف',
         'Recite every Friday',
         '✨ Protection from Dajjal',
-        const Color(0xFF4CAF50)
+        const Color(0xFF4CAF50),
       ),
       (
         'Before Sleep',
@@ -92,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'ملك',
         'Recite before sleep',
         '✨ Protection in the grave',
-        const Color(0xFF2196F3)
+        const Color(0xFF2196F3),
       ),
       (
         'Surat Al-Baqarah',
@@ -100,7 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'بقرة',
         'The longest chapter',
         '✨ Barakah and protection',
-        const Color(0xFFF59E0B)
+        const Color(0xFFF59E0B),
       ),
     ];
 
@@ -113,69 +127,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.only(left: 4, bottom: 12),
             child: Row(
               children: [
-                const Icon(Icons.menu_book_outlined,
-                    size: 18, color: AppColors.primaryGreen),
-                const SizedBox(width: 8),
-                Text('Sunnan Quranieh', style: AppTextStyles.headlineSmall),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    'Recommended Surahs',
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.primaryGreen),
-                  ),
+                const Icon(
+                  Icons.menu_book_outlined,
+                  size: 18,
+                  color: AppColors.primaryAccent,
                 ),
+                const SizedBox(width: 8),
+                Text('Sunnan Quranieh', style: AppTextStyles.cardTitle),
+                if (!isCompact)
+                  const SizedBox(width: 8),
+                if (!isCompact)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryAccent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'Recommended Surahs',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primaryAccent,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-          ...sunnah.map((s) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: IslamicCard(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: s.$6.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            s.$3,
-                            style: AppTextStyles.arabicSmall
-                                .copyWith(fontSize: 12, color: s.$6),
-                            textDirection: TextDirection.rtl,
+          ...sunnah.map(
+            (s) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ClayCard(
+                shadowLevel: ClayShadowLevel.surface,
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: s.$6.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              s.$3,
+                              style: AppTextStyles.arabicSmall.copyWith(
+                                fontSize: 12,
+                                color: s.$6,
+                              ),
+                              textDirection: TextDirection.rtl,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(s.$1, style: AppTextStyles.headlineSmall),
-                            Text(s.$2, style: AppTextStyles.bodySmall),
-                            Text(s.$4, style: AppTextStyles.bodySmall),
-                            Text(
-                              s.$5,
-                              style: AppTextStyles.bodySmall
-                                  .copyWith(color: AppColors.goldAccent),
-                            ),
-                          ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(s.$1, style: AppTextStyles.cardTitle),
+                              Text(s.$2, style: AppTextStyles.bodySmall),
+                              Text(s.$4, style: AppTextStyles.bodySmall),
+                              Text(
+                                s.$5,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.warning,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -185,34 +218,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _section(
       title: 'Islamic Reminders',
       icon: Icons.notifications_outlined,
-      iconColor: AppColors.goldAccent,
+      iconColor: AppColors.warning,
       children: [
         _SettingsToggle(
           title: 'Morning Dhikr',
           subtitle: 'Daily morning remembrance',
-          value: _morningDhikr,
-          onChanged: (v) => setState(() => _morningDhikr = v),
+          value: ref.watch(settingsProvider).morningDhikr,
+          onChanged: (v) =>
+              ref.read(settingsProvider.notifier).toggleMorningDhikr(v),
         ),
         const Divider(height: 1),
         _SettingsToggle(
           title: 'Evening Dhikr',
           subtitle: 'Daily evening remembrance',
-          value: _eveningDhikr,
-          onChanged: (v) => setState(() => _eveningDhikr = v),
+          value: ref.watch(settingsProvider).eveningDhikr,
+          onChanged: (v) =>
+              ref.read(settingsProvider.notifier).toggleEveningDhikr(v),
         ),
         const Divider(height: 1),
         _SettingsToggle(
           title: 'Surat Al-Mulk',
           subtitle: 'Before sleep protection',
-          value: _surahKahf,
-          onChanged: (v) => setState(() => _surahKahf = v),
+          value: ref.watch(settingsProvider).surahKahf,
+          onChanged: (v) =>
+              ref.read(settingsProvider.notifier).toggleSurahKahf(v),
         ),
         const Divider(height: 1),
         _SettingsToggle(
           title: 'Surat Al-Baqarah',
           subtitle: 'Weekly recitation',
-          value: _surahBaqarah,
-          onChanged: (v) => setState(() => _surahBaqarah = v),
+          value: ref.watch(settingsProvider).surahBaqarah,
+          onChanged: (v) =>
+              ref.read(settingsProvider.notifier).toggleSurahBaqarah(v),
         ),
       ],
     );
@@ -222,35 +259,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _section(
       title: 'App Settings',
       icon: Icons.settings_outlined,
-      iconColor: AppColors.textMedium,
+      iconColor: AppColors.textSecondary,
       children: [
         _SettingsTile(
-          leading: const Icon(Icons.language_outlined,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.language_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Language',
           onTap: () {},
         ),
         const Divider(height: 1),
         _SettingsTile(
-          leading: const Icon(Icons.volume_up_outlined,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.volume_up_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Audio Settings',
           onTap: () {},
         ),
         const Divider(height: 1),
         _SettingsTile(
-          leading: const Icon(Icons.download_outlined,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.download_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Download Quran',
           onTap: () {},
         ),
         const Divider(height: 1),
         _SettingsToggle(
-          leading: const Icon(Icons.dark_mode_outlined,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.dark_mode_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Dark Mode',
-          value: _darkMode,
-          onChanged: (v) => setState(() => _darkMode = v),
+          value: ref.watch(settingsProvider).isDarkMode,
+          onChanged: (v) =>
+              ref.read(settingsProvider.notifier).toggleDarkMode(v),
         ),
       ],
     );
@@ -260,32 +310,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _section(
       title: 'Account & Data',
       icon: Icons.person_outline,
-      iconColor: AppColors.textMedium,
+      iconColor: AppColors.textSecondary,
       children: [
         _SettingsTile(
-          leading: const Icon(Icons.person_outline,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.person_outline,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Profile',
           onTap: () {},
         ),
         const Divider(height: 1),
         _SettingsTile(
-          leading: const Icon(Icons.favorite_border,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.favorite_border,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Favorites',
           onTap: () {},
         ),
         const Divider(height: 1),
         _SettingsTile(
-          leading: const Icon(Icons.bookmark_border,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.bookmark_border,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Bookmarks',
           onTap: () {},
         ),
         const Divider(height: 1),
         _SettingsTile(
-          leading: const Icon(Icons.bar_chart,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.bar_chart,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Reading Progress',
           onTap: () {},
         ),
@@ -297,32 +359,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _section(
       title: 'Support',
       icon: Icons.help_outline,
-      iconColor: AppColors.textMedium,
+      iconColor: AppColors.textSecondary,
       children: [
         _SettingsTile(
-          leading: const Icon(Icons.help_outline,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.help_outline,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Help & FAQ',
           onTap: () {},
         ),
         const Divider(height: 1),
         _SettingsTile(
-          leading: const Icon(Icons.email_outlined,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.email_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Contact Us',
           onTap: () {},
         ),
         const Divider(height: 1),
         _SettingsTile(
-          leading: const Icon(Icons.share_outlined,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.share_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Share App',
           onTap: () {},
         ),
         const Divider(height: 1),
         _SettingsTile(
-          leading: const Icon(Icons.star_border,
-              color: AppColors.textMedium, size: 20),
+          leading: const Icon(
+            Icons.star_border,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           title: 'Rate App',
           onTap: () {},
         ),
@@ -340,30 +414,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: AppColors.primaryGreen.withOpacity(0.1),
+                color: AppColors.primaryAccent.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.menu_book,
-                  color: AppColors.primaryGreen, size: 32),
+              child: const Icon(
+                Icons.menu_book,
+                color: AppColors.primaryAccent,
+                size: 32,
+              ),
             ),
             const SizedBox(height: 12),
-            Text('Islamic Companion',
-                style: AppTextStyles.headlineMedium),
+            Text('Islamic Companion', style: AppTextStyles.headlineMedium),
             const SizedBox(height: 4),
             Text('Version 1.0.0', style: AppTextStyles.bodySmall),
             const SizedBox(height: 4),
-            Text('Made with ❤ for the Muslim Ummah',
-                style: AppTextStyles.bodySmall),
+            Text(
+              'Made with ❤ for the Muslim Ummah',
+              style: AppTextStyles.bodySmall,
+            ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.security, size: 14, color: AppColors.primaryGreen),
+                const Icon(
+                  Icons.security,
+                  size: 14,
+                  color: AppColors.primaryAccent,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Privacy Protected',
-                  style: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.primaryGreen),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.primaryAccent,
+                  ),
                 ),
               ],
             ),
@@ -390,11 +473,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Icon(icon, size: 18, color: iconColor),
                 const SizedBox(width: 8),
-                Text(title, style: AppTextStyles.headlineSmall),
+                Text(title, style: AppTextStyles.cardTitle),
               ],
             ),
           ),
-          IslamicCard(
+          ClayCard(
+            shadowLevel: ClayShadowLevel.surface,
             padding: EdgeInsets.zero,
             child: Column(children: children),
           ),
@@ -404,22 +488,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showLanguagePicker() {
+    final currentLang = ref.read(settingsProvider).language;
     showModalBottomSheet(
       context: context,
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
-        children: ['English', 'Arabic', 'French', 'Urdu'].map((lang) {
-          return ListTile(
-            title: Text(lang),
-            trailing: _language == lang
-                ? const Icon(Icons.check, color: AppColors.primaryGreen)
-                : null,
-            onTap: () {
-              setState(() => _language = lang);
-              Navigator.pop(context);
-            },
-          );
-        }).toList(),
+        children:
+            [
+              {'name': 'English', 'code': 'en'},
+              {'name': 'Arabic', 'code': 'ar'},
+            ].map((langObj) {
+              final langName = langObj['name']!;
+              final langCode = langObj['code']!;
+              return ListTile(
+                title: Text(langName),
+                trailing: currentLang == langCode
+                    ? const Icon(Icons.check, color: AppColors.primaryAccent)
+                    : null,
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setLanguage(langCode);
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
       ),
     );
   }
@@ -428,14 +519,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 class _SettingsTile extends StatelessWidget {
   final Widget? leading;
   final String title;
-  final String? subtitle;
   final Widget? trailing;
   final VoidCallback? onTap;
 
   const _SettingsTile({
     this.leading,
     required this.title,
-    this.subtitle,
     this.trailing,
     this.onTap,
   });
@@ -445,11 +534,9 @@ class _SettingsTile extends StatelessWidget {
     return ListTile(
       leading: leading,
       title: Text(title, style: AppTextStyles.bodyLarge),
-      subtitle: subtitle != null
-          ? Text(subtitle!, style: AppTextStyles.bodySmall)
-          : null,
-      trailing: trailing ??
-          const Icon(Icons.chevron_right, color: AppColors.textLight),
+      trailing:
+          trailing ??
+          const Icon(Icons.chevron_right, color: AppColors.textTertiary),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
@@ -482,7 +569,7 @@ class _SettingsToggle extends StatelessWidget {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.primaryGreen,
+        activeThumbColor: AppColors.primaryAccent,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
-import '../../../../core/widgets/islamic_card.dart';
+import '../../../../core/constants/clay_shadows.dart';
+import '../../../../core/widgets/clay_card.dart';
 import '../../domain/entities/thikr_entity.dart';
 
 class AthkarDetailScreen extends StatefulWidget {
@@ -34,20 +36,25 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
     setState(() => _count = 0);
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     final progress = _target > 0 ? _count / _target : 0.0;
     final isComplete = _count >= _target;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 360;
+    final counterSize = isCompact ? 120.0 : 140.0;
+    final titleFontSize = isCompact ? 36.0 : 44.0;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: Text(
           widget.thikr.category == 'morning'
               ? 'Morning Athkar'
               : 'Evening Athkar',
+          style: TextStyle(fontSize: isCompact ? 18.0 : 20.0),
         ),
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: AppColors.surface,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(20),
@@ -57,7 +64,11 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
               widget.thikr.category == 'morning'
                   ? 'Start your day with these blessed supplications'
                   : 'End your day with protection and gratitude',
-              style: AppTextStyles.bodySmall,
+              style: AppTextStyles.bodySmall.copyWith(
+                fontSize: isCompact ? 12 : 14,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
@@ -67,13 +78,14 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
         child: Column(
           children: [
             // Counter circle
-            IslamicCard(
+            ClayCard(
+              shadowLevel: ClayShadowLevel.surface,
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
                   SizedBox(
-                    width: 140,
-                    height: 140,
+                    width: counterSize,
+                    height: counterSize,
                     child: Stack(
                       children: [
                         SizedBox.expand(
@@ -83,8 +95,8 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
                             backgroundColor: AppColors.border,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               isComplete
-                                  ? AppColors.primaryGreen
-                                  : AppColors.primaryGreen,
+                                  ? AppColors.primaryAccent
+                                  : AppColors.primaryAccent,
                             ),
                           ),
                         ),
@@ -94,7 +106,10 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
                             children: [
                               Text(
                                 '$_count',
-                                style: GoogleFontsWorkaround.counter,
+                                style: AppTextStyles.sectionTitle.copyWith(
+                                  fontSize: titleFontSize,
+                                  color: AppColors.primaryAccent,
+                                ),
                               ),
                               Text(
                                 '/ $_target',
@@ -115,7 +130,7 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
                         icon: const Icon(Icons.refresh, size: 16),
                         label: const Text('Reset'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textMedium,
+                          foregroundColor: AppColors.textSecondary,
                           side: const BorderSide(color: AppColors.border),
                         ),
                       ),
@@ -125,7 +140,7 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
                         icon: const Icon(Icons.tune, size: 16),
                         label: const Text('Set Target'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textMedium,
+                          foregroundColor: AppColors.textSecondary,
                           side: const BorderSide(color: AppColors.border),
                         ),
                       ),
@@ -138,23 +153,27 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
             const SizedBox(height: 16),
 
             // Dhikr card
-            IslamicCard(
+            ClayCard(
+              shadowLevel: ClayShadowLevel.surface,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
                     children: [
-                      Text('Dhikr Text',
-                          style: AppTextStyles.headlineSmall),
+                      Text('Dhikr Text', style: AppTextStyles.cardTitle),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.volume_up_outlined,
-                            color: AppColors.textMedium),
+                        icon: const Icon(
+                          Icons.volume_up_outlined,
+                          color: AppColors.textSecondary,
+                        ),
                         onPressed: () {},
                       ),
                       IconButton(
-                        icon: const Icon(Icons.play_circle_outline,
-                            color: AppColors.primaryGreen),
+                        icon: const Icon(
+                          Icons.play_circle_outline,
+                          color: AppColors.primaryAccent,
+                        ),
                         onPressed: () {},
                       ),
                     ],
@@ -163,29 +182,38 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryGreen.withOpacity(0.05),
+                      color: AppColors.primaryAccent.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       widget.thikr.arabic,
-                      style: AppTextStyles.arabicBody,
+                      style: AppTextStyles.arabicBody.copyWith(
+                        fontSize: isCompact ? 24 : 28,
+                      ),
                       textDirection: TextDirection.rtl,
                       textAlign: TextAlign.right,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _infoSection('Translation',
-                      '"${widget.thikr.translation}"',
-                      isItalic: true),
+                  _infoSection(
+                    'Translation',
+                    '"${widget.thikr.translation}"',
+                    isItalic: true,
+                  ),
                   const SizedBox(height: 12),
-                  _infoSection('Transliteration',
-                      widget.thikr.transliteration),
+                  _infoSection('Transliteration', widget.thikr.transliteration),
                   const SizedBox(height: 12),
-                  _infoSection('Source', widget.thikr.source,
-                      valueColor: AppColors.textMedium),
+                  _infoSection(
+                    'Source',
+                    widget.thikr.source,
+                    valueColor: AppColors.textSecondary,
+                  ),
                   const SizedBox(height: 12),
-                  _infoSection('Reference', widget.thikr.reference,
-                      valueColor: AppColors.textLight),
+                  _infoSection(
+                    'Reference',
+                    widget.thikr.reference,
+                    valueColor: AppColors.textTertiary,
+                  ),
                 ],
               ),
             ),
@@ -196,26 +224,31 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _increment,
-        backgroundColor: AppColors.primaryGreen,
+        backgroundColor: AppColors.primaryAccent,
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
 
-  Widget _infoSection(String label, String value,
-      {bool isItalic = false, Color? valueColor}) {
+  Widget _infoSection(
+    String label,
+    String value, {
+    bool isItalic = false,
+    Color? valueColor,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: AppTextStyles.labelLarge
-                .copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          label,
+          style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 4),
         Text(
           value,
           style: AppTextStyles.bodyMedium.copyWith(
             fontStyle: isItalic ? FontStyle.italic : FontStyle.normal,
-            color: valueColor ?? AppColors.textMedium,
+            color: valueColor ?? AppColors.textSecondary,
           ),
         ),
       ],
@@ -223,8 +256,7 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
   }
 
   void _showSetTargetDialog() {
-    final controller =
-        TextEditingController(text: _target.toString());
+    final controller = TextEditingController(text: _target.toString());
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -236,8 +268,9 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               setState(() {
@@ -246,22 +279,12 @@ class _AthkarDetailScreenState extends State<AthkarDetailScreen> {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen),
-            child:
-                const Text('Set', style: TextStyle(color: Colors.white)),
+              backgroundColor: AppColors.primaryAccent,
+            ),
+            child: const Text('Set', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
-}
-
-// Workaround to avoid importing google_fonts in this file
-class GoogleFontsWorkaround {
-  static final counter = TextStyle(
-    fontSize: 44,
-    fontWeight: FontWeight.bold,
-    color: AppColors.primaryGreen,
-    fontFamily: 'Roboto',
-  );
 }
