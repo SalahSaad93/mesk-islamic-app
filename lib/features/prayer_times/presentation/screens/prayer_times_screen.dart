@@ -9,6 +9,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/clay_shadows.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/utils/hijri_date.dart';
+import '../../../../core/utils/responsive_layout.dart';
 import '../../../../core/widgets/clay_card.dart';
 import '../../../../core/widgets/location_permission_dialog.dart';
 import '../../domain/entities/prayer_times_entity.dart';
@@ -339,8 +340,8 @@ class _PrayerRowState extends State<_PrayerRow> {
     final l10n = AppLocalizations.of(context)!;
     final isPast = widget.prayer.isPast;
     final timeStr = DateFormat('HH:mm').format(widget.prayer.time);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isCompact = screenWidth < 400;
+    final sizeClass = ResponsiveLayout.fromContext(context);
+    final isCompact = sizeClass == ResponsiveSizeClass.compact;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),

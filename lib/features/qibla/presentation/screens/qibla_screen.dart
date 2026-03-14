@@ -6,6 +6,7 @@ import 'package:mesk_islamic_app/l10n/app_localizations.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/utils/responsive_layout.dart';
 import '../providers/qibla_provider.dart';
 
 class QiblaScreen extends ConsumerWidget {
@@ -76,8 +77,8 @@ class QiblaScreen extends ConsumerWidget {
     QiblaState state,
     AppLocalizations l10n,
   ) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isCompact = screenWidth < 400;
+    final sizeClass = ResponsiveLayout.fromContext(context);
+    final isCompact = sizeClass == ResponsiveSizeClass.compact;
     final compassSize = isCompact ? 240.0 : 300.0;
     
     return Center(

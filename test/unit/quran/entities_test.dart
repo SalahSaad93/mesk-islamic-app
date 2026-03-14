@@ -3,6 +3,8 @@ import 'package:mesk_islamic_app/features/quran/domain/entities/note_entity.dart
 import 'package:mesk_islamic_app/features/quran/domain/entities/highlight_entity.dart';
 import 'package:mesk_islamic_app/features/quran/domain/entities/bookmark_entity.dart';
 import 'package:mesk_islamic_app/features/quran/domain/entities/reciter_entity.dart';
+import 'package:mesk_islamic_app/features/quran/domain/entities/verse_position_entity.dart';
+import 'package:mesk_islamic_app/features/quran/domain/entities/khatma_progress_entity.dart';
 
 void main() {
   group('Quran Entities Unit Tests', () {
@@ -79,6 +81,94 @@ void main() {
 
       final fromJson = ReciterEntity.fromJson(json);
       expect(fromJson.nameEnglish, reciter.nameEnglish);
+    });
+
+    test('VersePositionEntity construction', () {
+      final position = VersePositionEntity(
+        surahNumber: 1,
+        ayahNumber: 1,
+        page: 1,
+      );
+
+      expect(position.surahNumber, 1);
+      expect(position.ayahNumber, 1);
+      expect(position.page, 1);
+    });
+
+    test('VersePositionEntity fromMap/toMap mapping', () {
+      final position = VersePositionEntity(
+        surahNumber: 2,
+        ayahNumber: 255,
+        page: 30,
+      );
+
+      final map = position.toMap();
+      expect(map['surah_number'], 2);
+      expect(map['ayah_number'], 255);
+      expect(map['page'], 30);
+
+      final fromMap = VersePositionEntity.fromMap(map);
+      expect(fromMap.surahNumber, position.surahNumber);
+      expect(fromMap.ayahNumber, position.ayahNumber);
+      expect(fromMap.page, position.page);
+    });
+
+    test('VersePositionEntity equality', () {
+      final position1 = VersePositionEntity(
+        surahNumber: 1,
+        ayahNumber: 1,
+        page: 1,
+      );
+      final position2 = VersePositionEntity(
+        surahNumber: 1,
+        ayahNumber: 1,
+        page: 1,
+      );
+      final position3 = VersePositionEntity(
+        surahNumber: 1,
+        ayahNumber: 2,
+        page: 1,
+      );
+
+      expect(position1, equals(position2));
+      expect(position1, isNot(equals(position3)));
+    });
+
+    test('KhatmaProgressEntity percentage calculation', () {
+      final progress = KhatmaProgressEntity(
+        highestPage: 302,
+        totalPages: 604,
+        startDate: DateTime.now(),
+        isCompleted: false,
+      );
+
+      expect(progress.percentage, closeTo(50.0, 0.1));
+    });
+
+    test('KhatmaProgressEntity percentage is 0 when totalPages is 0', () {
+      final progress = KhatmaProgressEntity(
+        highestPage: 100,
+        totalPages: 0,
+        startDate: DateTime.now(),
+        isCompleted: false,
+      );
+
+      expect(progress.percentage, 0.0);
+    });
+
+    test('KhatmaProgressEntity copyWith', () {
+      final progress = KhatmaProgressEntity(
+        highestPage: 100,
+        totalPages: 604,
+        startDate: DateTime.now(),
+        isCompleted: false,
+      );
+
+      final updated = progress.copyWith(highestPage: 200, isCompleted: true);
+
+      expect(updated.highestPage, 200);
+      expect(updated.isCompleted, true);
+      expect(updated.totalPages, 604);
     });
   });
 }

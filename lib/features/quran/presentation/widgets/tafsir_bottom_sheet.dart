@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../providers/quran_tafsir_provider.dart';
 
-class TafsirBottomSheet extends StatelessWidget {
+class TafsirBottomSheet extends ConsumerWidget {
   final int surahNumber;
   final int ayahNumber;
   final String textUthmani;
@@ -15,10 +17,12 @@ class TafsirBottomSheet extends StatelessWidget {
     required this.textUthmani,
   });
 
+  int get _verseId => (surahNumber - 1) * 100 + ayahNumber;
+
   @override
-  Widget build(BuildContext context) {
-    // In a real implementation, you would fetch Tafsir data from a database/API
-    // based on surahNumber and ayahNumber.
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tafsirAsync = ref.watch(tafsirProvider(_verseId));
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -41,8 +45,15 @@ class TafsirBottomSheet extends StatelessWidget {
             ),
           ),
           Text(
-            'Tafsir (Surah $surahNumber, Ayah $ayahNumber)',
+            'Tafsir Ibn Kathir',
             style: AppTextStyles.cardTitle,
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            'Surah $surahNumber, Ayah $ayahNumber',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -56,10 +67,39 @@ class TafsirBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Expanded(
-            child: SingleChildScrollView(
-              child: Text(
-                'Tafsir Ibn Kathir (or other source) text goes here. Currently using placeholder text since true Tafsir database is large. It provides context, translation, and interpretation for the selected Ayah.',
-                style: AppTextStyles.bodyMedium,
+            child: tafsirAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryAccent,
+                ),
+              ),
+              error: (error, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Failed to load tafsir',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => ref.invalidate(tafsirProvider(_verseId)),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+              data: (tafsir) => SingleChildScrollView(
+                child: Text(
+                  tafsir?.text ?? 'No tafsir available for this verse.',
+                  style: AppTextStyles.bodyMedium,
+                ),
               ),
             ),
           ),

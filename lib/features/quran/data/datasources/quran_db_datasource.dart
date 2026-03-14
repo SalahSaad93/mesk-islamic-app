@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import '../../domain/entities/verse_entity.dart';
 import '../../domain/entities/juz_entity.dart';
+import '../../domain/entities/verse_position_entity.dart';
 import '../services/quran_database_service.dart';
 
 /// Read-only queries against the Quran database (verses, juz, search).
@@ -122,5 +123,44 @@ class QuranDbDatasource {
       [page],
     );
     return rows.map((r) => r['surah_number'] as int).toList();
+  }
+
+  /// Get the first verse position on a given Mushaf page.
+  Future<VersePositionEntity> getFirstVerseOnPage(int page) async {
+    final db = await _db;
+    final rows = await db.query(
+      'verses',
+      where: 'page = ?',
+      whereArgs: [page],
+      orderBy: 'surah_number ASC, ayah_number ASC',
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return const VersePositionEntity(
+        surahNumber: 1,
+        ayahNumber: 1,
+        page: 1,
+      );
+    }
+    final verse = VerseEntity.fromMap(rows.first);
+    return VersePositionEntity(
+      surahNumber: verse.surahNumber,
+      ayahNumber: verse.ayahNumber,
+      page: verse.page,
+    );
+  }
+
+  /// Get the Mushaf page number for a given verse reference.
+  Future<int> getPageForVerse(int surahNumber, int ayahNumber) async {
+    final db = await _db;
+    final rows = await db.query(
+      'verses',
+      columns: ['page'],
+      where: 'surah_number = ? AND ayah_number = ?',
+      whereArgs: [surahNumber, ayahNumber],
+      limit: 1,
+    );
+    if (rows.isEmpty) return 1;
+    return rows.first['page'] as int;
   }
 }

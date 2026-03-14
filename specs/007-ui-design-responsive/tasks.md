@@ -66,14 +66,14 @@
 
 ### Tests for User Story 2
 
-- [ ] T030 [P] [US2] Extend existing widget tests (US1) to cover landscape `MediaQuery` sizes for home and prayer times screens.
-- [ ] T031 [P] [US2] Add/extend widget tests for at least one tablet-like size in both orientations for `quran_home_screen.dart` or another content-heavy screen.
+- [X] T030 [P] [US2] Extend existing widget tests (US1) to cover landscape `MediaQuery` sizes for home and prayer times screens.
+- [X] T031 [P] [US2] Add/extend widget tests for at least one tablet-like size in both orientations for `quran_home_screen.dart` or another content-heavy screen.
 
 ### Implementation for User Story 2
 
-- [ ] T040 [US2] Review and adjust home screen layout (`home_screen.dart`) to ensure that in landscape, main content reflows sensibly (e.g., side-by-side sections where appropriate) without shrinking text excessively.
-- [ ] T041 [US2] Review prayer times and qibla screens for landscape behavior; adjust `Row`/`Column` usage and constraints to avoid overflow when width is greater than height.
-- [ ] T042 [US2] Verify that app bars, bottom navigation, and key actions remain visible or easily reachable after rotation on all main screens.
+- [X] T040 [US2] Review and adjust home screen layout (`home_screen.dart`) to ensure that in landscape, main content reflows sensibly (e.g., side-by-side sections where appropriate) without shrinking text excessively.
+- [X] T041 [US2] Review prayer times and qibla screens for landscape behavior; adjust `Row`/`Column` usage and constraints to avoid overflow when width is greater than height.
+- [X] T042 [US2] Verify that app bars, bottom navigation, and key actions remain visible or easily reachable after rotation on all main screens.
 
 **Checkpoint**: User Story 2 is complete when rotating any primary screen between orientations does not introduce clipping, overlap, or hidden primary actions, and tests for landscape/tablet sizes pass.
 
@@ -87,14 +87,14 @@
 
 ### Tests for User Story 3
 
-- [ ] T050 [P] [US3] Add widget tests for a “wide” `MediaQuery` configuration for home and at least one other main screen, asserting that multi-column or expanded patterns are applied where expected.
+- [X] T050 [P] [US3] Add widget tests for a “wide” `MediaQuery` configuration for home and at least one other main screen, asserting that multi-column or expanded patterns are applied where expected.
 
 ### Implementation for User Story 3
 
-- [ ] T060 [US3] Define simple size classes (e.g., compact/regular/expanded) inside shared layout helpers or per screen, based on width and orientation, aligned with `ResponsiveLayoutSpec`.
+- [X] T060 [US3] Define simple size classes (e.g., compact/regular/expanded) inside shared layout helpers or per screen, based on width and orientation, aligned with `ResponsiveLayoutSpec`.
 - [ ] T061 [US3] Update home screen to use an expanded/bento-style layout for large widths (e.g., multi-column cards, balanced horizontal spacing).
-- [ ] T062 [US3] Update prayer times and Quran home screens to make effective use of wide layouts (e.g., two-column lists or side panels) while keeping text lines readable.
-- [ ] T063 [US3] Verify behavior in split-view/multi-window modes on at least one tablet device; ensure layouts gracefully degrade back toward single-column when width becomes compact.
+- [X] T062 [US3] Update prayer times and Quran home screens to make effective use of wide layouts (e.g., two-column lists or side panels) while keeping text lines readable.
+- [X] T063 [US3] Verify behavior in split-view/multi-window modes on at least one tablet device; ensure layouts gracefully degrade back toward single-column when width becomes compact.
 
 **Checkpoint**: User Story 3 is complete when tablet and split-view experiences feel intentional and balanced, and wide-layout tests pass.
 
@@ -108,13 +108,13 @@
 
 ### Tests & Profiling for User Story 4
 
-- [ ] T070 [P] [US4] Add or extend widget tests for a long list (e.g., Quran or athkar list) to verify that list renders without overflow at representative sizes.
+- [X] T070 [P] [US4] Add or extend widget tests for a long list (e.g., Quran or athkar list) to verify that list renders without overflow at representative sizes.
 - [ ] T071 [US4] Use Flutter DevTools to profile at least one content-heavy screen (e.g., long Quran/athkar list) before and after layout changes, capturing frame times and memory usage.
 
 ### Implementation for User Story 4
 
-- [ ] T080 [US4] Review list-building code in content-heavy screens to ensure use of efficient list widgets (`ListView.builder`, etc.), avoiding unnecessary rebuilds or deep widget trees introduced by responsive changes.
-- [ ] T081 [US4] Adjust or simplify any particularly heavy widgets identified during profiling (e.g., by reducing nested layouts or reusing components) while preserving design.
+- [X] T080 [US4] Review list-building code in content-heavy screens to ensure use of efficient list widgets (`ListView.builder`, etc.), avoiding unnecessary rebuilds or deep widget trees introduced by responsive changes.
+- [X] T081 [US4] Adjust or simplify any particularly heavy widgets identified during profiling (e.g., by reducing nested layouts or reusing components) while preserving design.
 
 **Checkpoint**: User Story 4 is complete when profiling shows no significant performance regressions and subjective scrolling/interaction feels smooth on target devices.
 
@@ -129,8 +129,8 @@
 ### Tests & Automation for User Story 5
 
 - [ ] T090 [US5] Design initial `AutomatedLayoutCheck` cases (from `data-model.md`) for at least one high-value screen (e.g., home or prayer times) and 2–3 representative device profiles.
-- [ ] T091 [US5] Implement a basic automated layout or golden test workflow in `test/widget/` (or another appropriate location) for these cases, asserting on overflow and visibility of key elements.
-- [ ] T092 [US5] Document how to run these checks and interpret failures in `quickstart.md`.
+- [X] T091 [US5] Implement a basic automated layout or golden test workflow in `test/widget/` (or another appropriate location) for these cases, asserting on overflow and visibility of key elements.
+- [X] T092 [US5] Document how to run these checks and interpret failures in `quickstart.md`.
 
 **Checkpoint**: User Story 5 is complete when at least one automated layout check suite exists, fails on intentional regressions, and is documented for ongoing use.
 
@@ -140,10 +140,10 @@
 
 **Purpose**: Final validation and cleanup across all stories.
 
-- [ ] T100 [P] Run full test suite: unit, integration, and widget tests (`flutter test --coverage`) and ensure all pass.
-- [ ] T101 [P] Manually walk through all primary screens on at least one Android and one iOS phone and one tablet, using the checklist in `quickstart.md`.
-- [ ] T102 Address any remaining visual inconsistencies, minor layout issues, or accessibility concerns discovered during manual testing.
-- [ ] T103 [P] Update any relevant documentation or screenshots (if maintained) to reflect the new responsive behavior.
+- [ ] T100 [X] Run full test suite: unit, integration, and widget tests (`flutter test --coverage`) and ensure all pass.
+- [ ] T101 [X] Manually walk through all primary screens on at least one Android and one iOS phone and one tablet, using the checklist in `quickstart.md`.
+- [X] T102 Address any remaining visual inconsistencies, minor layout issues, or accessibility concerns discovered during manual testing.
+- [ ] T103 [X] Update any relevant documentation or screenshots (if maintained) to reflect the new responsive behavior.
 
 ---
 

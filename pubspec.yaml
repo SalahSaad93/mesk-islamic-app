@@ -36,6 +36,9 @@ dependencies:
   # Intl
   intl: ^0.20.0
 
+  # Hijri Calendar
+  hijri: ^3.0.0
+
   # SVG
   flutter_svg: ^2.0.16
 
@@ -77,6 +80,9 @@ flutter:
   assets:
     - assets/data/reciters.json
     - assets/data/daily_verses.json
+    - assets/data/quran_verses.json
+    - assets/data/quran_translation_en.json
+    - assets/data/surahs.json
     - assets/data/
     - assets/images/
     - assets/sounds/

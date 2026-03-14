@@ -7,8 +7,11 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/services/storage_service.dart';
 import '../providers/quran_audio_provider.dart';
 import '../providers/quran_provider.dart';
+import '../providers/quran_khatma_provider.dart';
 import '../widgets/mushaf_page_view.dart';
 import '../widgets/reciter_picker_sheet.dart';
+import '../widgets/reader_settings_sheet.dart';
+import '../widgets/khatma_progress_widget.dart';
 
 class QuranReaderScreen extends ConsumerStatefulWidget {
   const QuranReaderScreen({super.key});
@@ -23,8 +26,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   @override
   void initState() {
     super.initState();
-    final initialPage = ref.read(quranReaderProvider).currentPage;
-    _pageController = PageController(initialPage: 604 - initialPage);
+    final readerState = ref.read(quranReaderProvider);
+    _pageController = PageController(initialPage: readerState.currentPage - 1);
     // Hide status bar and bottom navigation for immersive reading
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
@@ -37,10 +40,10 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   void _onPageChanged(int index) {
-    final page = 604 - index;
+    final page = index + 1;
     ref.read(quranReaderProvider.notifier).onPageChanged(page);
-    // Save locally
-    ref.read(storageServiceProvider).setLastReadPage(page);
+    // Update khatma progress
+    ref.read(khatmaProvider.notifier).onPageRead(page);
   }
 
   @override
@@ -115,6 +118,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               ),
               onPressed: _showSettingsSheet,
             ),
+            KhatmaProgressWidget(),
           ],
         ),
       ),
@@ -250,70 +254,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   void _showSettingsSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => const _QuranSettingsSheet(),
-    );
-  }
-}
-
-class _QuranSettingsSheet extends ConsumerWidget {
-  const _QuranSettingsSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final audioState = ref.watch(quranAudioProvider);
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Text('Reader Settings', style: AppTextStyles.cardTitle),
-          const SizedBox(height: 24),
-          Text('Audio Reciter', style: AppTextStyles.labelSmall),
-          const SizedBox(height: 12),
-          ListTile(
-            onTap: () {
-              Navigator.pop(context);
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const ReciterPickerSheet(),
-              );
-            },
-            shape: RoundedRectangleBorder(
-              side: const BorderSide(color: AppColors.border),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            title: Text(
-              audioState.selectedReciter?.nameEnglish ?? 'Select Reciter',
-              style: AppTextStyles.bodyMedium,
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
+    showReaderSettingsSheet(context);
   }
 }

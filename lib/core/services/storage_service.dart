@@ -31,8 +31,41 @@ class StorageService {
   String get selectedReciterId => _prefs.getString('quran_reciter_id') ?? 'ar.alafasy';
   Future<void> setSelectedReciterId(String id) => _prefs.setString('quran_reciter_id', id);
 
-  String get readingMode => _prefs.getString('quran_reading_mode') ?? 'mushafPage';
+  String get readingMode => _prefs.getString('quran_reading_mode') ?? 'fullQuranMode';
   Future<void> setReadingMode(String mode) => _prefs.setString('quran_reading_mode', mode);
+
+  // Khatma progress
+  int get khatmaHighestPage => _prefs.getInt('khatma_highest_page') ?? 0;
+  Future<void> setKhatmaHighestPage(int page) => _prefs.setInt('khatma_highest_page', page);
+
+  String get khatmaStartDate => _prefs.getString('khatma_start_date') ?? DateTime.now().toIso8601String();
+  Future<void> setKhatmaStartDate(String date) => _prefs.setString('khatma_start_date', date);
+
+  bool get khatmaCompleted => _prefs.getBool('khatma_completed') ?? false;
+  Future<void> setKhatmaCompleted(bool value) => _prefs.setBool('khatma_completed', value);
+
+  Future<void> resetKhatma() async {
+    await _prefs.setInt('khatma_highest_page', 0);
+    await _prefs.setString('khatma_start_date', DateTime.now().toIso8601String());
+    await _prefs.setBool('khatma_completed', false);
+  }
+
+  // Verse mode position
+  int get verseModeSurah => _prefs.getInt('quran_verse_mode_surah') ?? 1;
+  Future<void> setVerseModeSurah(int surah) => _prefs.setInt('quran_verse_mode_surah', surah);
+
+  int get verseModeAyah => _prefs.getInt('quran_verse_mode_ayah') ?? 1;
+  Future<void> setVerseModeAyah(int ayah) => _prefs.setInt('quran_verse_mode_ayah', ayah);
+
+  // Reading preferences
+  int get fontSize => _prefs.getInt('quran_font_size') ?? 2;
+  Future<void> setFontSize(int size) => _prefs.setInt('quran_font_size', size);
+
+  bool get nightMode => _prefs.getBool('quran_night_mode') ?? false;
+  Future<void> setNightMode(bool enabled) => _prefs.setBool('quran_night_mode', enabled);
+
+  bool get showTranslation => _prefs.getBool('quran_show_translation') ?? false;
+  Future<void> setShowTranslation(bool show) => _prefs.setBool('quran_show_translation', show);
 
   // === Athkar ===
   String? getAthkarProgress(String category) => _prefs.getString('athkar_progress_$category');

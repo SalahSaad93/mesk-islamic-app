@@ -6,12 +6,20 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/clay_shadows.dart';
 import '../../../../core/widgets/clay_card.dart';
 import '../../domain/entities/surah_entity.dart';
+import '../../domain/entities/reading_preferences_entity.dart';
 import '../providers/quran_provider.dart';
+import '../providers/quran_khatma_provider.dart';
+import '../providers/quran_audio_provider.dart';
+import '../widgets/khatma_progress_widget.dart';
+import '../widgets/reading_mode_toggle.dart';
 import 'bookmarks_screen.dart';
 import 'juz_index_screen.dart';
 import 'quran_reader_screen.dart';
+import 'quran_verse_mode_screen.dart';
 import 'quran_search_screen.dart';
 import 'surah_index_screen.dart';
+
+final readingModeProvider = StateProvider<ReadingMode>((ref) => ReadingMode.fullQuranMode);
 
 class QuranHomeScreen extends ConsumerWidget {
   const QuranHomeScreen({super.key});
@@ -20,6 +28,7 @@ class QuranHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final surahsAsync = ref.watch(surahsProvider);
     final readerState = ref.watch(quranReaderProvider);
+    final readingMode = ref.watch(readingModeProvider);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -32,6 +41,7 @@ class QuranHomeScreen extends ConsumerWidget {
           data: (surahs) => _QuranContent(
             surahs: surahs,
             currentPage: readerState.currentPage,
+            readingMode: readingMode,
           ),
         ),
       ),
@@ -42,8 +52,13 @@ class QuranHomeScreen extends ConsumerWidget {
 class _QuranContent extends ConsumerWidget {
   final List<SurahEntity> surahs;
   final int currentPage;
+  final ReadingMode readingMode;
 
-  const _QuranContent({required this.surahs, required this.currentPage});
+  const _QuranContent({
+    required this.surahs,
+    required this.currentPage,
+    required this.readingMode,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,7 +74,7 @@ class _QuranContent extends ConsumerWidget {
         SliverToBoxAdapter(child: _buildHeader(currentSurah)),
         SliverToBoxAdapter(child: _buildTabBar(context, surahs, currentSurah)),
         SliverToBoxAdapter(
-          child: _buildReadingStats(currentPage, surahs.length),
+          child: _buildReadingStats(currentPage, surahs.length, ref),
         ),
         SliverToBoxAdapter(child: _buildBrowseSection(context, surahs)),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -73,9 +88,28 @@ class _QuranContent extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            currentSurah?.nameEnglish ?? 'Al-Quran',
-            style: AppTextStyles.sectionTitle,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                currentSurah?.nameEnglish ?? 'Al-Quran',
+                style: AppTextStyles.sectionTitle,
+              ),
+              Semantics(
+                label: 'Switch reading mode',
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    return ReadingModeToggle(
+                      currentMode: readingMode,
+                      onModeChanged: (mode) {
+                        ref.read(quranAudioProvider.notifier).stop();
+                        ref.read(readingModeProvider.notifier).state = mode;
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
           if (currentSurah != null)
             Text(
@@ -88,8 +122,59 @@ class _QuranContent extends ConsumerWidget {
               'Surah ${currentSurah.number} • ${currentSurah.versesCount} verses • ${currentSurah.revelationType}',
               style: AppTextStyles.bodySmall,
             ),
+          const SizedBox(height: 12),
+          _buildContinueReadingButton(),
         ],
       ),
+    );
+  }
+
+  Widget _buildContinueReadingButton() {
+    return Builder(
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, _) {
+            return SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final mode = readingMode;
+                  ref.read(quranAudioProvider.notifier).stop();
+                  if (mode == ReadingMode.fullQuranMode) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QuranReaderScreen(),
+                      ),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QuranVerseModeScreen(),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.play_arrow, size: 20),
+                label: Text(
+                  readingMode == ReadingMode.fullQuranMode
+                      ? 'Continue Reading (Mushaf)'
+                      : 'Continue Reading (Verse)',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -365,7 +450,7 @@ class _QuranContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildReadingStats(int currentPage, int totalSurahs) {
+  Widget _buildReadingStats(int currentPage, int totalSurahs, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ClayCard(
@@ -384,11 +469,7 @@ class _QuranContent extends ConsumerWidget {
               value: '3 days',
             ),
             _StatDivider(),
-            _StatItem(
-              icon: Icons.bar_chart,
-              label: 'Progress',
-              value: '${((currentPage / 604) * 100).toStringAsFixed(1)}%',
-            ),
+            KhatmaProgressWidget(),
           ],
         ),
       ),

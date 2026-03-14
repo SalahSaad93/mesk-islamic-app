@@ -55,3 +55,31 @@ app.*.map.json
 
 # Lock files
 *.lock
+.docs
+.opencode/
+.opencode/command/speckit.analyze.md
+.opencode/command/speckit.checklist.md
+.opencode/command/speckit.clarify.md
+.opencode/command/speckit.implement.md
+.opencode/command/speckit.plan.md
+.opencode/command/speckit.specify.md
+.opencode/command/speckit.tasks.md
+.opencode/command/speckit.analyze.md
+.opencode/command/speckit.checklist.md
+.opencode/command/speckit.clarify.md
+.opencode/command/speckit.implement.md
+.opencode/command/speckit.plan.md
+.opencode/command/speckit.specify.md
+.opencode/command/speckit.tasks.md
+.speckit/docs/integration-guide.md
+.speckit/docs/quick-reference.md
+.speckit/docs/subagent-prompts.md
+.speckit/docs/token-optimization.md
+.speckit/universal-token-optimizer/README.md
+.speckit/universal-token-optimizer/sync-speckit-commands.ps1
+.speckit/universal-token-optimizer/core/checkpoint_manager.py
+.speckit/universal-token-optimizer/docs/getting-started.md
+.speckit/universal-token-optimizer/templates/summary-templates/plan-summary.yaml
+.speckit/universal-token-optimizer/templates/summary-templates/spec-summary.yaml
+.speckit/universal-token-optimizer/templates/summary-templates/task-summary.yaml
+.speckit/universal-token-optimizer/utilities/token_counter.py

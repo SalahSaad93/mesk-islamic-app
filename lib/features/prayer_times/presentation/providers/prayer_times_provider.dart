@@ -52,6 +52,9 @@ class PrayerTimesNotifier extends AsyncNotifier<PrayerTimesEntity> {
         case 'Tehran':
           params = CalculationMethod.tehran.getParameters();
           break;
+        case 'ISNA':
+          params = CalculationMethod.north_america.getParameters();
+          break;
         default:
           params = CalculationMethod.north_america.getParameters();
       }

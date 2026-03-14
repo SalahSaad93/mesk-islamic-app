@@ -22,14 +22,19 @@ class QuranDatabaseService {
 
     return openDatabase(
       dbPath,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await _createTables(db);
         await _seedFromAssets(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
-          await _createUserTables(db);
+          await _createTranslationsTable(db);
+    await _createTafsirCacheTable(db);
+    await _createUserTables(db);
+        }
+        if (oldVersion < 3) {
+          await _upgradeToV3(db);
         }
       },
     );
@@ -63,6 +68,8 @@ class QuranDatabaseService {
       )
     ''');
 
+    await _createTranslationsTable(db);
+    await _createTafsirCacheTable(db);
     await _createUserTables(db);
   }
 
@@ -164,6 +171,9 @@ class QuranDatabaseService {
       // it will be populated once the actual asset is added.
       debugPrintStack(label: 'QuranDB seed error: $e');
     }
+
+    // Seed translations
+    await _seedTranslations(db);
   }
 
   Future<void> _seedJuzData(Database db) async {
@@ -489,3 +499,70 @@ void debugPrintStack({required String label}) {
 }
 
 final quranDbServiceProvider = Provider((_) => QuranDatabaseService());
+  Future<void> _createTranslationsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS translations (
+        verse_id INTEGER NOT NULL,
+        language TEXT NOT NULL,
+        text TEXT NOT NULL,
+        translator TEXT NOT NULL,
+        PRIMARY KEY (verse_id, language)
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_translations_verse ON translations(verse_id)',
+    );
+  }
+
+  Future<void> _createTafsirCacheTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS tafsir_cache (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        verse_id INTEGER NOT NULL,
+        source TEXT NOT NULL,
+        text TEXT NOT NULL,
+        cached_at TEXT,
+        UNIQUE (verse_id, source)
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_tafsir_cache_verse ON tafsir_cache(verse_id)',
+    );
+  }
+
+  Future<void> _upgradeToV3(Database db) async {
+    await _createTranslationsTable(db);
+    await _createTafsirCacheTable(db);
+    await _seedTranslations(db);
+  }
+
+  Future<void> _seedTranslations(Database db) async {
+    try {
+      final jsonStr = await rootBundle.loadString(
+        'assets/data/quran_translation_en.json',
+      );
+      final List<dynamic> translations = json.decode(jsonStr);
+
+      const batchSize = 200;
+      for (var i = 0; i < translations.length; i += batchSize) {
+        final batch = db.batch();
+        final end = (i + batchSize > translations.length)
+            ? translations.length
+            : i + batchSize;
+        for (var j = i; j < end; j++) {
+          final t = translations[j] as Map<String, dynamic>;
+          batch.insert('translations', {
+            'verse_id': t['verse_id'],
+            'language': t['language'] ?? 'en',
+            'text': t['text'],
+            'translator': t['translator'] ?? 'sahih_international',
+          });
+        }
+        await batch.commit(noResult: true);
+      }
+    } catch (e) {
+      debugPrintStack(label: 'Translation seed error: $e');
+    }
+  }

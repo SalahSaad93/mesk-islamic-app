@@ -1,0 +1,80 @@
+template:
+  name: "specification-summary"
+  version: "1.0"
+  description: "Compressed summary for feature specifications"
+  
+sections:
+  - name: "Scope"
+    format: "paragraph"
+    max_length: 100  # words
+    source: "spec.md -> Scope section"
+    compression: "extract_first_sentence"
+    required: true
+    
+  - name: "User Scenarios"
+    format: "bullet_list"
+    max_items: 10
+    source: "spec.md -> User Scenarios section"
+    compression: "extract_bullet_points"
+    required: true
+    
+  - name: "Functional Requirements"
+    format: "numbered_list"
+    max_items: 20
+    source: "spec.md -> Functional Requirements section"
+    compression: "extract_numbered_list"
+    required: true
+    
+  - name: "Success Criteria"
+    format: "bullet_list"
+    max_items: 10
+    source: "spec.md -> Success Criteria section"
+    compression: "keep_measurable_only"
+    required: true
+    
+  - name: "Key Entities"
+    format: "comma_separated"
+    max_items: 15
+    source: "spec.md -> Key Entities section"
+    compression: "extract_entity_names"
+    required: false
+    
+  - name: "Assumptions"
+    format: "bullet_list"
+    max_items: 10
+    source: "spec.md -> Assumptions section"
+    compression: "extract_bullet_points"
+    required: false
+    
+  - name: "Dependencies"
+    format: "bullet_list"
+    max_items: 10
+    source: "spec.md -> Dependencies section"
+    compression: "extract_bullet_points"
+    required: false
+
+output_format:
+  type: "markdown"
+  file: "spec-summary.md"
+  max_tokens: 500  # Target max token count for summarized output
+  
+compression_settings:
+  remove_empty_sections: true
+  remove_duplicate_items: true
+  preserve_numbering: true
+  preserve_markdown_formatting: true
+  
+validation:
+  min_sections: 4  # At least 4 required sections must be present
+  max_tokens: 600  # Hard limit
+  must_include:
+    - "Scope"
+    - "User Scenarios"
+    - "Functional Requirements"
+    - "Success Criteria"
+
+metadata:
+  author: "universal-token-optimizer"
+  created: "{{TIMESTAMP}}"
+  source_file: "spec.md"
+  compression_ratio: "{{CALCULATED}}"

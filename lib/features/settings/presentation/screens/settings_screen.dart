@@ -70,7 +70,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               Text(
                 ref.watch(settingsProvider.select((s) => s.language)) == 'ar'
-                    ? 'Arabic'
+                    ? 'العربية'
                     : 'English',
                 style: AppTextStyles.bodyMedium,
               ),
@@ -268,7 +268,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             size: 20,
           ),
           title: 'Language',
-          onTap: () {},
+          onTap: () => _showLanguagePicker(),
         ),
         const Divider(height: 1),
         _SettingsTile(
@@ -496,7 +496,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         children:
             [
               {'name': 'English', 'code': 'en'},
-              {'name': 'Arabic', 'code': 'ar'},
+              {'name': 'العربية', 'code': 'ar'},
             ].map((langObj) {
               final langName = langObj['name']!;
               final langCode = langObj['code']!;

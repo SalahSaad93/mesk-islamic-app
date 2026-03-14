@@ -1,0 +1,91 @@
+template:
+  name: "task-summary"
+  version: "1.0"
+  description: "Compressed summary for individual tasks"
+  
+sections:
+  - name: "Task ID"
+    format: "single_value"
+    source: "task.md -> ID"
+    compression: "extract_single_value"
+    required: true
+    
+  - name: "Task Name"
+    format: "single_value"
+    source: "task.md -> Name"
+    compression: "extract_single_value"
+    required: true
+    
+  - name: "Phase"
+    format: "single_value"
+    source: "task.md -> Phase"
+    compression: "extract_single_value"
+    required: false
+    
+  - name: "Priority"
+    format: "single_value"
+    source: "task.md -> Priority"
+    compression: "extract_single_value"
+    required: false
+    
+  - name: "Description"
+    format: "paragraph"
+    max_length: 50  # words
+    source: "task.md -> Description section"
+    compression: "extract_first_sentence"
+    required: true
+    
+  - name: "Files to Create/Modify"
+    format: "bullet_list"
+    max_items: 10
+    source: "task.md -> Files section"
+    compression: "extract_file_paths"
+    required: true
+    
+  - name: "Dependencies"
+    format: "comma_separated"
+    max_items: 5
+    source: "task.md -> Dependencies section"
+    compression: "extract_task_ids"
+    required: false
+    
+  - name: "Acceptance Criteria"
+    format: "bullet_list"
+    max_items: 10
+    source: "task.md -> Acceptance Criteria section"
+    compression: "extract_bullet_points"
+    required: true
+    
+  - name: "Implementation Notes"
+    format: "paragraph"
+    max_length: 30  # words
+    source: "task.md -> Implementation Notes section"
+    compression: "extract_first_sentence"
+    required: false
+
+output_format:
+  type: "markdown"
+  file: "task-XXX.md"
+  max_tokens: 300  # Target max token count for summarized output
+  
+compression_settings:
+  remove_empty_sections: true
+  remove_duplicate_items: true
+  preserve_file_paths: true
+  preserve_task_ids: true
+  
+validation:
+  min_sections: 5
+  max_tokens: 350
+  must_include:
+    - "Task ID"
+    - "Task Name"
+    - "Description"
+    - "Files to Create/Modify"
+    - "Acceptance Criteria"
+
+metadata:
+  author: "universal-token-optimizer"
+  created: "{{TIMESTAMP}}"
+  source_file: "tasks.md"
+  compression_ratio: "{{CALCULATED}}"

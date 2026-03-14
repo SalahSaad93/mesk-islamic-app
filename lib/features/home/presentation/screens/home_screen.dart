@@ -397,6 +397,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
+
+  Widget _buildExpandedLayout(
+    PrayerTimesEntity times,
+    AppLocalizations l10n,
+    ResponsiveSizeClass sizeClass,
+  ) {
+    final upcoming = times.prayers.where((p) => !p.isPast).toList();
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: _buildUpcomingPrayers(times, l10n, sizeClass),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _buildQuickAccess(l10n, sizeClass),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ClayQuickAccessItem extends StatelessWidget {

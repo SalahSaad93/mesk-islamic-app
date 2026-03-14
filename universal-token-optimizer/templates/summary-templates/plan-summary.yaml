@@ -1,0 +1,79 @@
+template:
+  name: "implementation-plan-summary"
+  version: "1.0"
+  description: "Compressed summary for implementation plans"
+  
+sections:
+  - name: "Architecture"
+    format: "paragraph"
+    max_length: 150  # words
+    source: "plan.md -> Architecture section"
+    compression: "extract_first_sentence"
+    required: true
+    
+  - name: "Components"
+    format: "bullet_list"
+    max_items: 15
+    source: "plan.md -> Components section"
+    compression: "extract_bullet_points"
+    required: true
+    
+  - name: "Implementation Phases"
+    format: "numbered_list"
+    max_items: 10
+    source: "plan.md -> Implementation Phases section"
+    compression: "extract_first_line_only"
+    required: true
+    
+  - name: "File Structure"
+    format: "bullet_list"
+    max_items: 20
+    source: "plan.md -> File Structure section"
+    compression: "extract_file_paths"
+    required: false
+    
+  - name: "Dependencies"
+    format: "bullet_list"
+    max_items: 10
+    source: "plan.md -> Dependencies section"
+    compression: "extract_bullet_points"
+    required: false
+    
+  - name: "Estimated Effort"
+    format: "paragraph"
+    max_length: 50  # words
+    source: "plan.md -> Estimated Effort section"
+    compression: "extract_first_sentence"
+    required: false
+    
+  - name: "Critical Files"
+    format: "comma_separated"
+    max_items: 10
+    source: "plan.md -> Critical Files section"
+    compression: "extract_file_names"
+    required: false
+
+output_format:
+  type: "markdown"
+  file: "plan-summary.md"
+  max_tokens: 400
+  
+compression_settings:
+  remove_empty_sections: true
+  remove_duplicate_items: true
+  preserve_numbering: true
+  preserve_file_paths: true
+  
+validation:
+  min_sections: 3
+  max_tokens: 450
+  must_include:
+    - "Architecture"
+    - "Components"
+    - "Implementation Phases"
+
+metadata:
+  author: "universal-token-optimizer"
+  created: "{{TIMESTAMP}}"
+  source_file: "plan.md"
+  compression_ratio: "{{CALCULATED}}"
