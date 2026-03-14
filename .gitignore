@@ -43,3 +43,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+.agent
+.claude
+.cursor
+.specify
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Lock files
+*.lock

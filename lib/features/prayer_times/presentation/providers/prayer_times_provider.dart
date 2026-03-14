@@ -1,17 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:adhan/adhan.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/services/location_service.dart';
+import '../../../../core/services/storage_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../domain/entities/prayer_times_entity.dart';
 
 final prayerTimesProvider =
     AsyncNotifierProvider<PrayerTimesNotifier, PrayerTimesEntity>(
-  PrayerTimesNotifier.new,
-);
+      PrayerTimesNotifier.new,
+    );
 
-final calculationMethodProvider =
-    StateProvider<String>((ref) => 'NorthAmerica');
+final calculationMethodProvider = StateProvider<String>(
+  (ref) => 'NorthAmerica',
+);
 
 class PrayerTimesNotifier extends AsyncNotifier<PrayerTimesEntity> {
   @override
@@ -21,61 +22,18 @@ class PrayerTimesNotifier extends AsyncNotifier<PrayerTimesEntity> {
 
   Future<PrayerTimesEntity> _loadPrayerTimes() async {
     try {
-      // Check location permission
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
+      final locationService = ref.read(locationServiceProvider);
+      final storageService = ref.read(storageServiceProvider);
 
-      Position position;
-      String locationName = 'Your Location';
+      final locationParams = await locationService.getCurrentLocation();
 
-      try {
-        position = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium,
-            timeLimit: Duration(seconds: 10),
-          ),
-        );
-
-        // Try to get city name
-        try {
-          final placemarks = await placemarkFromCoordinates(
-            position.latitude,
-            position.longitude,
-          );
-          if (placemarks.isNotEmpty) {
-            final place = placemarks.first;
-            locationName = place.locality ??
-                place.administrativeArea ??
-                place.country ??
-                'Your Location';
-          }
-        } catch (_) {}
-      } catch (_) {
-        // Fallback to New York coordinates
-        position = Position(
-          latitude: 40.7128,
-          longitude: -74.0060,
-          timestamp: DateTime.now(),
-          accuracy: 0,
-          altitude: 0,
-          altitudeAccuracy: 0,
-          heading: 0,
-          headingAccuracy: 0,
-          speed: 0,
-          speedAccuracy: 0,
-        );
-        locationName = 'New York, USA';
-      }
-
-      final coords = Coordinates(position.latitude, position.longitude);
+      final coords = Coordinates(
+        locationParams.latitude,
+        locationParams.longitude,
+      );
       final date = DateComponents.from(DateTime.now());
 
-      // Load calculation method from preferences
-      final prefs = await SharedPreferences.getInstance();
-      final methodName =
-          prefs.getString('calculation_method') ?? 'NorthAmerica';
+      final methodName = storageService.calculationMethod;
 
       CalculationParameters params;
       switch (methodName) {
@@ -100,12 +58,7 @@ class PrayerTimesNotifier extends AsyncNotifier<PrayerTimesEntity> {
 
       final prayerTimes = PrayerTimes(coords, date, params);
 
-      // Save location for offline use
-      await prefs.setDouble('last_lat', position.latitude);
-      await prefs.setDouble('last_lng', position.longitude);
-      await prefs.setString('last_location_name', locationName);
-
-      return PrayerTimesEntity(
+      final entity = PrayerTimesEntity(
         fajr: prayerTimes.fajr,
         sunrise: prayerTimes.sunrise,
         dhuhr: prayerTimes.dhuhr,
@@ -113,18 +66,18 @@ class PrayerTimesNotifier extends AsyncNotifier<PrayerTimesEntity> {
         maghrib: prayerTimes.maghrib,
         isha: prayerTimes.isha,
         date: DateTime.now(),
-        locationName: locationName,
+        locationName: locationParams.name,
         calculationMethod: methodName,
       );
-    } catch (e) {
-      // Return cached or default
-      final prefs = await SharedPreferences.getInstance();
-      final lat = prefs.getDouble('last_lat') ?? 40.7128;
-      final lng = prefs.getDouble('last_lng') ?? -74.0060;
-      final locationName =
-          prefs.getString('last_location_name') ?? 'New York, USA';
 
-      final coords = Coordinates(lat, lng);
+      _scheduleNotifications(entity, storageService);
+      return entity;
+    } catch (_) {
+      // Return cached or default fallback
+
+      // We don't have lat/lng persistence directly in storage service yet for fallback
+      // Using generic default fallback
+      final coords = Coordinates(40.7128, -74.0060);
       final date = DateComponents.from(DateTime.now());
       final params = CalculationMethod.north_america.getParameters();
       final prayerTimes = PrayerTimes(coords, date, params);
@@ -137,7 +90,7 @@ class PrayerTimesNotifier extends AsyncNotifier<PrayerTimesEntity> {
         maghrib: prayerTimes.maghrib,
         isha: prayerTimes.isha,
         date: DateTime.now(),
-        locationName: locationName,
+        locationName: 'New York, USA',
         calculationMethod: 'NorthAmerica',
       );
     }
@@ -146,5 +99,40 @@ class PrayerTimesNotifier extends AsyncNotifier<PrayerTimesEntity> {
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_loadPrayerTimes);
+  }
+
+  Future<void> _scheduleNotifications(
+    PrayerTimesEntity entity,
+    StorageService storageService,
+  ) async {
+    final notificationService = ref.read(notificationServiceProvider);
+
+    // We can cancel existing prayer alarms (IDs 1 to 6)
+    for (int i = 1; i <= 6; i++) {
+      await notificationService.cancelNotification(i);
+    }
+
+    final Map<String, DateTime> times = {
+      'Fajr': entity.fajr,
+      'Sunrise': entity.sunrise,
+      'Dhuhr': entity.dhuhr,
+      'Asr': entity.asr,
+      'Maghrib': entity.maghrib,
+      'Isha': entity.isha,
+    };
+
+    int id = 1;
+    for (final entry in times.entries) {
+      if (storageService.getPrayerNotification(entry.key)) {
+        await notificationService.schedulePrayerNotification(
+          id: id,
+          prayerName: entry.key,
+          time: entry.value,
+          minutesBefore:
+              0, // In the future, this can be customized via settings
+        );
+      }
+      id++;
+    }
   }
 }

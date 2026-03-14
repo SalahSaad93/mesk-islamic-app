@@ -1,36 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:mesk_islamic_app/l10n/app_localizations.dart';
+
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
-import '../../../../core/widgets/islamic_card.dart';
-import '../providers/prayer_times_provider.dart';
+import '../../../../core/constants/clay_shadows.dart';
+import '../../../../core/services/location_service.dart';
+import '../../../../core/utils/hijri_date.dart';
+import '../../../../core/widgets/clay_card.dart';
+import '../../../../core/widgets/location_permission_dialog.dart';
 import '../../domain/entities/prayer_times_entity.dart';
+import '../providers/prayer_times_provider.dart';
 
-class PrayerTimesScreen extends ConsumerWidget {
+class PrayerTimesScreen extends ConsumerStatefulWidget {
   const PrayerTimesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PrayerTimesScreen> createState() => _PrayerTimesScreenState();
+}
+
+class _PrayerTimesScreenState extends ConsumerState<PrayerTimesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkLocationPermission();
+    });
+  }
+
+  Future<void> _checkLocationPermission() async {
+    final locationService = ref.read(locationServiceProvider);
+    final permission = await locationService.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      if (!mounted) return;
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const LocationPermissionDialog(),
+      );
+
+      if (result == true) {
+        final newPermission = await locationService.requestPermission();
+        if (newPermission == LocationPermission.always ||
+            newPermission == LocationPermission.whileInUse) {
+          ref.read(prayerTimesProvider.notifier).refresh();
+        }
+      }
+    } else if (permission == LocationPermission.deniedForever) {
+      _showDeniedForeverDialog();
+    }
+  }
+
+  void _showDeniedForeverDialog() {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.locationPermissionTitle),
+        content: Text(l10n.locationPermissionDeniedForever),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Geolocator.openAppSettings();
+              Navigator.pop(context);
+            },
+            child: Text(l10n.openSettings),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final prayerState = ref.watch(prayerTimesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: prayerState.when(
           loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryGreen),
+            child: CircularProgressIndicator(color: AppColors.primaryAccent),
           ),
           error: (e, _) => Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AppColors.error,
+                ),
                 const SizedBox(height: 12),
-                Text('Could not load prayer times', style: AppTextStyles.bodyLarge),
+                Text(
+                  'Could not load prayer times',
+                  style: AppTextStyles.bodyLarge,
+                ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () => ref.read(prayerTimesProvider.notifier).refresh(),
+                  onPressed: () =>
+                      ref.read(prayerTimesProvider.notifier).refresh(),
                   child: const Text('Retry'),
                 ),
               ],
@@ -49,18 +126,23 @@ class _PrayerTimesContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(child: _buildHeader()),
-        SliverToBoxAdapter(child: _buildDateCard()),
-        SliverToBoxAdapter(child: _buildPrayersList()),
-        SliverToBoxAdapter(child: _buildCalculationMethod(ref)),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
-      ],
+    final l10n = AppLocalizations.of(context)!;
+    return RefreshIndicator(
+      color: AppColors.primaryAccent,
+      onRefresh: () => ref.read(prayerTimesProvider.notifier).refresh(),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeader(l10n)),
+          SliverToBoxAdapter(child: _buildDateCard()),
+          SliverToBoxAdapter(child: _buildPrayersList(l10n)),
+          SliverToBoxAdapter(child: _buildCalculationMethod(ref, l10n)),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        ],
+      ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
@@ -68,22 +150,29 @@ class _PrayerTimesContent extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Prayer Times', style: AppTextStyles.headlineLarge),
+              Text(l10n.prayerTimes, style: AppTextStyles.sectionTitle),
               Row(
                 children: [
-                  const Icon(Icons.location_on_outlined,
-                      size: 14, color: AppColors.textLight),
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 14,
+                    color: AppColors.textTertiary,
+                  ),
                   const SizedBox(width: 4),
-                  Text(prayerTimes.locationName,
-                      style: AppTextStyles.bodySmall),
+                  Text(
+                    prayerTimes.locationName,
+                    style: AppTextStyles.bodySmall,
+                  ),
                 ],
               ),
             ],
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: AppColors.textMedium),
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: AppColors.textSecondary,
+            ),
             onPressed: () {},
           ),
         ],
@@ -94,31 +183,40 @@ class _PrayerTimesContent extends ConsumerWidget {
   Widget _buildDateCard() {
     final now = DateTime.now();
     final gregorianDate = DateFormat('EEEE, MMMM d, y').format(now);
-    final hijriDate = _getHijriDate(now);
+    final hijriDate = HijriDate.format(now);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: IslamicCard(
+      child: ClayCard(
+        shadowLevel: ClayShadowLevel.surface,
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
-              icon: const Icon(Icons.chevron_left, color: AppColors.textMedium),
+              icon: const Icon(
+                Icons.chevron_left,
+                color: AppColors.textSecondary,
+              ),
               onPressed: () {},
             ),
             Column(
               children: [
-                Text(gregorianDate, style: AppTextStyles.headlineSmall),
+                Text(gregorianDate, style: AppTextStyles.cardTitle),
                 const SizedBox(height: 4),
-                Text(hijriDate,
-                    style: AppTextStyles.bodyMedium
-                        .copyWith(color: AppColors.primaryGreen)),
+                Text(
+                  hijriDate,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.primaryAccent,
+                  ),
+                ),
               ],
             ),
             IconButton(
-              icon:
-                  const Icon(Icons.chevron_right, color: AppColors.textMedium),
+              icon: const Icon(
+                Icons.chevron_right,
+                color: AppColors.textSecondary,
+              ),
               onPressed: () {},
             ),
           ],
@@ -127,39 +225,39 @@ class _PrayerTimesContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildPrayersList() {
+  Widget _buildPrayersList(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: IslamicCard(
+      child: ClayCard(
+        shadowLevel: ClayShadowLevel.surface,
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Today's Prayers", style: AppTextStyles.headlineSmall),
+            Text(l10n.todaysPrayers, style: AppTextStyles.cardTitle),
             const SizedBox(height: 16),
-            ...prayerTimes.prayers
-                .map((p) => _PrayerRow(prayer: p))
-                .toList(),
+            ...prayerTimes.prayers.map((p) => _PrayerRow(prayer: p)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCalculationMethod(WidgetRef ref) {
+  Widget _buildCalculationMethod(WidgetRef ref, AppLocalizations l10n) {
     final method = _getMethodDisplayName(prayerTimes.calculationMethod);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: IslamicCard(
+      child: ClayCard(
+        shadowLevel: ClayShadowLevel.surface,
         padding: const EdgeInsets.all(16),
-        borderColor: AppColors.primaryGreen.withOpacity(0.3),
+
         child: Row(
           children: [
             Container(
               width: 4,
               height: 50,
               decoration: BoxDecoration(
-                color: AppColors.primaryGreen,
+                color: AppColors.primaryAccent,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -170,23 +268,30 @@ class _PrayerTimesContent extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.settings_outlined,
-                          size: 16, color: AppColors.primaryGreen),
+                      const Icon(
+                        Icons.settings_outlined,
+                        size: 16,
+                        color: AppColors.primaryAccent,
+                      ),
                       const SizedBox(width: 6),
-                      Text('Calculation Method',
-                          style: AppTextStyles.labelLarge),
+                      Text(
+                        l10n.calculationMethod,
+                        style: AppTextStyles.labelLarge,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text('Using $method method for prayer time calculations.',
-                      style: AppTextStyles.bodySmall),
+                  Text(
+                    l10n.usingMethodForCalculations(method),
+                    style: AppTextStyles.bodySmall,
+                  ),
                   const SizedBox(height: 4),
                   GestureDetector(
                     onTap: () {},
                     child: Text(
-                      'Change settings',
+                      l10n.changeSettings,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.primaryGreen,
+                        color: AppColors.primaryAccent,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -198,50 +303,6 @@ class _PrayerTimesContent extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String _getHijriDate(DateTime date) {
-    // Simple Hijri date approximation
-    final hijriOffset = 578;
-    final julianDay = _toJulianDay(date);
-    final hijriDay = julianDay - 1948440 + 10632;
-    final n = ((hijriDay - 1) ~/ 10631);
-    final hijriDay2 = hijriDay - 10631 * n + 354;
-    final j = ((10985 - hijriDay2) ~/ 5316) * ((50 * hijriDay2) ~/ 17719) +
-        (hijriDay2 ~/ 5670) * ((43 * hijriDay2) ~/ 15238);
-    final hijriDay3 = hijriDay2 -
-        ((30 - j) ~/ 15) * ((17719 * j) ~/ 50) -
-        (j ~/ 16) * ((15238 * j) ~/ 43) +
-        29;
-    final month = (24 * hijriDay3) ~/ 709;
-    final day = hijriDay3 - (709 * month) ~/ 24;
-    final year = 30 * n + j - 30;
-
-    final hijriMonths = [
-      'Muharram', 'Safar', "Rabi' al-Awwal", "Rabi' al-Thani",
-      "Jumada al-Ula", "Jumada al-Akhirah", 'Rajab', "Sha'ban",
-      'Ramadan', 'Shawwal', "Dhu al-Qi'dah", "Dhu al-Hijjah"
-    ];
-
-    try {
-      final monthName = hijriMonths[(month - 1).clamp(0, 11)];
-      return '$day $monthName $year';
-    } catch (_) {
-      return 'Hijri Date';
-    }
-  }
-
-  int _toJulianDay(DateTime date) {
-    final a = (14 - date.month) ~/ 12;
-    final y = date.year + 4800 - a;
-    final m = date.month + 12 * a - 3;
-    return date.day +
-        (153 * m + 2) ~/ 5 +
-        365 * y +
-        y ~/ 4 -
-        y ~/ 100 +
-        y ~/ 400 -
-        32045;
   }
 
   String _getMethodDisplayName(String method) {
@@ -275,71 +336,137 @@ class _PrayerRowState extends State<_PrayerRow> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isPast = widget.prayer.isPast;
     final timeStr = DateFormat('HH:mm').format(widget.prayer.time);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 400;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Text(widget.prayer.icon, style: const TextStyle(fontSize: 28)),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
+      child: isCompact
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.prayer.name,
-                  style: AppTextStyles.headlineSmall.copyWith(
-                    color: isPast ? AppColors.textLight : AppColors.textDark,
+                Row(
+                  children: [
+                    Text(widget.prayer.icon, style: const TextStyle(fontSize: 28)),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        widget.prayer.name,
+                        style: AppTextStyles.cardTitle.copyWith(
+                          color: isPast ? AppColors.textTertiary : AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 42),
+                  child: Text(
+                    _getPrayerSubtitle(widget.prayer.name, l10n),
+                    style: AppTextStyles.bodySmall,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      timeStr,
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: isPast ? AppColors.textTertiary : AppColors.primaryAccent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      _notifEnabled
+                          ? Icons.notifications_outlined
+                          : Icons.notifications_off_outlined,
+                      size: 18,
+                      color: _notifEnabled
+                          ? AppColors.primaryAccent
+                          : AppColors.textTertiary,
+                    ),
+                    const SizedBox(width: 4),
+                    Transform.scale(
+                      scale: 0.8,
+                      child: Switch(
+                        value: _notifEnabled,
+                        onChanged: (v) => setState(() => _notifEnabled = v),
+                        activeThumbColor: AppColors.primaryAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Text(widget.prayer.icon, style: const TextStyle(fontSize: 28)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.prayer.name,
+                        style: AppTextStyles.cardTitle.copyWith(
+                          color: isPast ? AppColors.textTertiary : AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        _getPrayerSubtitle(widget.prayer.name, l10n),
+                        style: AppTextStyles.bodySmall,
+                      ),
+                    ],
                   ),
                 ),
                 Text(
-                  _getPrayerSubtitle(widget.prayer.name),
-                  style: AppTextStyles.bodySmall,
+                  timeStr,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: isPast ? AppColors.textTertiary : AppColors.primaryAccent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  _notifEnabled
+                      ? Icons.notifications_outlined
+                      : Icons.notifications_off_outlined,
+                  size: 18,
+                  color: _notifEnabled
+                      ? AppColors.primaryAccent
+                      : AppColors.textTertiary,
+                ),
+                const SizedBox(width: 4),
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    value: _notifEnabled,
+                    onChanged: (v) => setState(() => _notifEnabled = v),
+                    activeThumbColor: AppColors.primaryAccent,
+                  ),
                 ),
               ],
             ),
-          ),
-          Text(
-            timeStr,
-            style: AppTextStyles.prayerTime.copyWith(
-              color: isPast ? AppColors.textLight : AppColors.primaryGreen,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            _notifEnabled ? Icons.notifications_outlined : Icons.notifications_off_outlined,
-            size: 18,
-            color: _notifEnabled ? AppColors.primaryGreen : AppColors.textLight,
-          ),
-          const SizedBox(width: 4),
-          Transform.scale(
-            scale: 0.8,
-            child: Switch(
-              value: _notifEnabled,
-              onChanged: (v) => setState(() => _notifEnabled = v),
-              activeColor: AppColors.primaryGreen,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
-  String _getPrayerSubtitle(String name) {
+  String _getPrayerSubtitle(String name, AppLocalizations l10n) {
     switch (name) {
       case 'Fajr':
-        return 'Dawn Prayer';
+        return l10n.dawnPrayer;
       case 'Dhuhr':
-        return 'Noon Prayer';
+        return l10n.noonPrayer;
       case 'Asr':
-        return 'Afternoon Prayer';
+        return l10n.afternoonPrayer;
       case 'Maghrib':
-        return 'Sunset Prayer';
+        return l10n.sunsetPrayer;
       case 'Isha':
-        return 'Night Prayer';
+        return l10n.nightPrayer;
       default:
         return '';
     }

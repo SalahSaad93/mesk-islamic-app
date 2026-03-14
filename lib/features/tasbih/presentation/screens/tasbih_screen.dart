@@ -1,22 +1,23 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:math' as math;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
-import '../../../../core/widgets/islamic_card.dart';
+import '../../domain/entities/tasbih_session.dart';
+import '../providers/tasbih_provider.dart';
 
-class TasbihScreen extends StatefulWidget {
+class TasbihScreen extends ConsumerStatefulWidget {
   const TasbihScreen({super.key});
 
   @override
-  State<TasbihScreen> createState() => _TasbihScreenState();
+  ConsumerState<TasbihScreen> createState() => _TasbihScreenState();
 }
 
-class _TasbihScreenState extends State<TasbihScreen>
+class _TasbihScreenState extends ConsumerState<TasbihScreen>
     with SingleTickerProviderStateMixin {
-  int _count = 0;
-  int _target = 33;
-  int _selectedDhikr = 0;
   late AnimationController _animController;
   late Animation<double> _scaleAnim;
 
@@ -46,31 +47,28 @@ class _TasbihScreenState extends State<TasbihScreen>
   }
 
   void _increment() async {
-    if (_count >= _target) return;
+    final tasbih = ref.read(tasbihProvider);
+    if (tasbih.count >= tasbih.target) return;
     HapticFeedback.lightImpact();
     await _animController.forward();
     await _animController.reverse();
-    setState(() {
-      _count++;
-      if (_count == _target) {
-        HapticFeedback.heavyImpact();
-        _showCompletionSnackBar();
-      }
-    });
+    ref.read(tasbihProvider.notifier).increment();
+    final updated = ref.read(tasbihProvider);
+    if (updated.count == updated.target) {
+      HapticFeedback.heavyImpact();
+      _showCompletionSnackBar(updated);
+    }
   }
 
-  void _reset() {
-    setState(() => _count = 0);
-  }
-
-  void _showCompletionSnackBar() {
+  void _showCompletionSnackBar(TasbihState tasbih) {
+    final dhikr = _dhikrList[tasbih.selectedDhikrIndex];
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Mashallah! ${_dhikrList[_selectedDhikr].arabic} completed $_target times!',
+          'Mashallah! ${dhikr.arabic} completed ${tasbih.target} times!',
           style: const TextStyle(fontFamily: 'Amiri'),
         ),
-        backgroundColor: AppColors.primaryGreen,
+        backgroundColor: AppColors.primaryAccent,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -78,11 +76,14 @@ class _TasbihScreenState extends State<TasbihScreen>
 
   @override
   Widget build(BuildContext context) {
-    final progress = _target > 0 ? (_count / _target).clamp(0.0, 1.0) : 0.0;
-    final dhikr = _dhikrList[_selectedDhikr];
+    final tasbih = ref.watch(tasbihProvider);
+    final progress = tasbih.target > 0
+        ? (tasbih.count / tasbih.target).clamp(0.0, 1.0)
+        : 0.0;
+    final dhikr = _dhikrList[tasbih.selectedDhikrIndex];
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -91,13 +92,13 @@ class _TasbihScreenState extends State<TasbihScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildCounter(progress, dhikr),
+                  _buildCounter(progress, tasbih),
                   const SizedBox(height: 32),
                   _buildDhikrText(dhikr),
                   const SizedBox(height: 32),
-                  _buildDhikrSelector(),
+                  _buildDhikrSelector(tasbih),
                   const SizedBox(height: 24),
-                  _buildControls(),
+                  _buildControls(tasbih, dhikr),
                 ],
               ),
             ),
@@ -112,11 +113,13 @@ class _TasbihScreenState extends State<TasbihScreen>
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          Text('Tasbih Counter', style: AppTextStyles.headlineLarge),
+          Text('Tasbih Counter', style: AppTextStyles.sectionTitle),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.history_outlined,
-                color: AppColors.textMedium),
+            icon: const Icon(
+              Icons.history_outlined,
+              color: AppColors.textSecondary,
+            ),
             onPressed: _showHistorySheet,
           ),
         ],
@@ -124,18 +127,22 @@ class _TasbihScreenState extends State<TasbihScreen>
     );
   }
 
-  Widget _buildCounter(double progress, _DhikrItem dhikr) {
+  Widget _buildCounter(double progress, TasbihState tasbih) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 360;
+    final counterSize = isCompact ? 200.0 : 260.0;
+    
     return GestureDetector(
       onTap: _increment,
       child: ScaleTransition(
         scale: _scaleAnim,
         child: SizedBox(
-          width: 260,
-          height: 260,
+          width: counterSize,
+          height: counterSize,
           child: CustomPaint(
             painter: _CounterRingPainter(
               progress: progress,
-              primaryColor: AppColors.primaryGreen,
+              primaryColor: AppColors.primaryAccent,
               goldColor: AppColors.goldAccent,
             ),
             child: Center(
@@ -147,10 +154,10 @@ class _TasbihScreenState extends State<TasbihScreen>
                     transitionBuilder: (child, anim) =>
                         ScaleTransition(scale: anim, child: child),
                     child: Text(
-                      '$_count',
-                      key: ValueKey(_count),
-                      style: const TextStyle(
-                        fontSize: 64,
+                      '${tasbih.count}',
+                      key: ValueKey(tasbih.count),
+                      style: TextStyle(
+                        fontSize: isCompact ? 48 : 64,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         fontFamily: 'Roboto',
@@ -158,9 +165,10 @@ class _TasbihScreenState extends State<TasbihScreen>
                     ),
                   ),
                   Text(
-                    '/ $_target',
-                    style: AppTextStyles.bodyLarge
-                        .copyWith(color: Colors.white70),
+                    '/ ${tasbih.target}',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: Colors.white70,
+                    ),
                   ),
                 ],
               ),
@@ -179,49 +187,46 @@ class _TasbihScreenState extends State<TasbihScreen>
           Text(
             dhikr.arabic,
             style: AppTextStyles.arabicLarge.copyWith(
-              color: AppColors.primaryGreen,
+              color: AppColors.primaryAccent,
             ),
             textDirection: TextDirection.rtl,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
-          Text(
-            dhikr.transliteration,
-            style: AppTextStyles.bodyMedium,
-          ),
+          Text(dhikr.transliteration, style: AppTextStyles.bodyMedium),
         ],
       ),
     );
   }
 
-  Widget _buildDhikrSelector() {
+  Widget _buildDhikrSelector(TasbihState tasbih) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: List.generate(_dhikrList.length, (i) {
-            final isSelected = i == _selectedDhikr;
+            final isSelected = i == tasbih.selectedDhikrIndex;
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: GestureDetector(
-                onTap: () => setState(() {
-                  _selectedDhikr = i;
-                  _target = _dhikrList[i].target;
-                  _count = 0;
-                }),
+                onTap: () => ref
+                    .read(tasbihProvider.notifier)
+                    .selectDhikr(i, _dhikrList[i].target),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.primaryGreen
-                        : AppColors.backgroundWhite,
+                        ? AppColors.primaryAccent
+                        : AppColors.surface,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
-                          ? AppColors.primaryGreen
+                          ? AppColors.primaryAccent
                           : AppColors.border,
                     ),
                   ),
@@ -230,9 +235,8 @@ class _TasbihScreenState extends State<TasbihScreen>
                       Text(
                         _dhikrList[i].arabic.split(' ').first,
                         style: AppTextStyles.arabicSmall.copyWith(
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.textDark,
+                          color:
+                              isSelected ? Colors.white : AppColors.textPrimary,
                           fontSize: 14,
                         ),
                         textDirection: TextDirection.rtl,
@@ -240,8 +244,9 @@ class _TasbihScreenState extends State<TasbihScreen>
                       Text(
                         '${_dhikrList[i].target}x',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color:
-                              isSelected ? Colors.white70 : AppColors.textLight,
+                          color: isSelected
+                              ? Colors.white70
+                              : AppColors.textTertiary,
                         ),
                       ),
                     ],
@@ -255,28 +260,45 @@ class _TasbihScreenState extends State<TasbihScreen>
     );
   }
 
-  Widget _buildControls() {
+  Widget _buildControls(TasbihState tasbih, _DhikrItem dhikr) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         OutlinedButton.icon(
-          onPressed: _reset,
+          onPressed: () => ref.read(tasbihProvider.notifier).reset(),
           icon: const Icon(Icons.refresh, size: 18),
           label: const Text('Reset'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.textMedium,
+            foregroundColor: AppColors.textSecondary,
             side: const BorderSide(color: AppColors.border),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
         ),
         const SizedBox(width: 16),
         ElevatedButton.icon(
-          onPressed: () => _saveSession(),
+          onPressed: tasbih.count > 0
+              ? () {
+                  ref
+                      .read(tasbihProvider.notifier)
+                      .saveSession(
+                        arabic: dhikr.arabic,
+                        transliteration: dhikr.transliteration,
+                      );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Session saved successfully!'),
+                      backgroundColor: AppColors.primaryAccent,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              : null,
           icon: const Icon(Icons.save_outlined, size: 18),
           label: const Text('Save Session'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryGreen,
+            backgroundColor: AppColors.primaryAccent,
             foregroundColor: Colors.white,
+            disabledBackgroundColor: AppColors.border,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
         ),
@@ -285,36 +307,123 @@ class _TasbihScreenState extends State<TasbihScreen>
   }
 
   void _showHistorySheet() {
+    final sessions = ref.read(tasbihProvider).sessions;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Session History', style: AppTextStyles.headlineMedium),
-            const SizedBox(height: 16),
-            const Center(
-              child: Text('No sessions yet',
-                  style: TextStyle(color: AppColors.textLight)),
-            ),
-          ],
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.55,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        builder: (_, controller) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Text('Session History', style: AppTextStyles.headlineMedium),
+                  const Spacer(),
+                  Text(
+                    '${sessions.length} sessions',
+                    style: AppTextStyles.bodySmall,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (sessions.isEmpty)
+                const Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.history,
+                          size: 48,
+                          color: AppColors.textTertiary,
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'No sessions yet.\nTap "Save Session" after counting.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textTertiary),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.separated(
+                    controller: controller,
+                    itemCount: sessions.length,
+                    separatorBuilder: (_, i) => const Divider(height: 1),
+                    itemBuilder: (_, i) => _buildSessionTile(sessions[i]),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _saveSession() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            'Session saved: ${_dhikrList[_selectedDhikr].arabic} x $_count'),
-        backgroundColor: AppColors.primaryGreen,
+  Widget _buildSessionTile(TasbihSession session) {
+    final dateStr = _formatDate(session.timestamp);
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+      leading: CircleAvatar(
+        backgroundColor: AppColors.primaryAccent.withValues(alpha: 0.1),
+        child: Text(
+          '${session.count}',
+          style: AppTextStyles.labelLarge.copyWith(
+            color: AppColors.primaryAccent,
+            fontSize: 13,
+          ),
+        ),
+      ),
+      title: Text(
+        session.arabic,
+        style: AppTextStyles.arabicSmall.copyWith(fontSize: 16),
+        textDirection: TextDirection.rtl,
+      ),
+      subtitle: Text(session.transliteration, style: AppTextStyles.bodySmall),
+      trailing: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '${session.count}/${session.target}',
+            style: AppTextStyles.labelSmall,
+          ),
+          Text(dateStr, style: AppTextStyles.bodySmall),
+        ],
       ),
     );
+  }
+
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
   }
 }
 
@@ -341,25 +450,19 @@ class _CounterRingPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 10;
 
-    // Background circle (gradient fill)
     final bgPaint = Paint()
       ..shader = RadialGradient(
-        colors: [
-          primaryColor.withOpacity(0.9),
-          primaryColor,
-        ],
+        colors: [primaryColor.withValues(alpha: 0.9), primaryColor],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawCircle(center, radius, bgPaint);
 
-    // Track ring
     final trackPaint = Paint()
-      ..color = Colors.white.withOpacity(0.15)
+      ..color = Colors.white.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
     canvas.drawCircle(center, radius - 4, trackPaint);
 
-    // Progress ring
     final progressPaint = Paint()
       ..color = goldColor
       ..style = PaintingStyle.stroke

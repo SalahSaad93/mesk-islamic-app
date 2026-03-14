@@ -3,25 +3,21 @@ import 'package:flutter/services.dart';
 import '../../domain/entities/thikr_entity.dart';
 
 class AthkarLocalDatasource {
-  List<ThikrEntity>? _morningCache;
-  List<ThikrEntity>? _eveningCache;
+  final Map<String, List<ThikrEntity>> _cache = {};
 
-  Future<List<ThikrEntity>> getMorningAthkar() async {
-    if (_morningCache != null) return _morningCache!;
-    final jsonStr =
-        await rootBundle.loadString('assets/data/athkar_morning.json');
-    final List<dynamic> data = json.decode(jsonStr);
-    _morningCache = data.map((e) => _fromJson(e)).toList();
-    return _morningCache!;
-  }
+  Future<List<ThikrEntity>> getAthkarByCategory(String category) async {
+    if (_cache.containsKey(category)) return _cache[category]!;
 
-  Future<List<ThikrEntity>> getEveningAthkar() async {
-    if (_eveningCache != null) return _eveningCache!;
-    final jsonStr =
-        await rootBundle.loadString('assets/data/athkar_evening.json');
-    final List<dynamic> data = json.decode(jsonStr);
-    _eveningCache = data.map((e) => _fromJson(e)).toList();
-    return _eveningCache!;
+    final assetPath = 'assets/data/athkar_$category.json';
+    try {
+      final jsonStr = await rootBundle.loadString(assetPath);
+      final List<dynamic> data = json.decode(jsonStr);
+      final result = data.map((e) => _fromJson(e)).toList();
+      _cache[category] = result;
+      return result;
+    } catch (e) {
+      return []; // Return empty list if file not found or parsing fails
+    }
   }
 
   ThikrEntity _fromJson(Map<String, dynamic> json) {

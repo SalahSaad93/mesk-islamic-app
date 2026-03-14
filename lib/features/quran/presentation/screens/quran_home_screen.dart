@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
-import '../../../../core/widgets/islamic_card.dart';
-import '../providers/quran_provider.dart';
+import '../../../../core/constants/clay_shadows.dart';
+import '../../../../core/widgets/clay_card.dart';
 import '../../domain/entities/surah_entity.dart';
+import '../providers/quran_provider.dart';
+import 'bookmarks_screen.dart';
+import 'juz_index_screen.dart';
+import 'quran_reader_screen.dart';
+import 'quran_search_screen.dart';
 import 'surah_index_screen.dart';
 
 class QuranHomeScreen extends ConsumerWidget {
@@ -16,11 +22,11 @@ class QuranHomeScreen extends ConsumerWidget {
     final readerState = ref.watch(quranReaderProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: surahsAsync.when(
           loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryGreen),
+            child: CircularProgressIndicator(color: AppColors.primaryAccent),
           ),
           error: (e, _) => Center(child: Text('Error: $e')),
           data: (surahs) => _QuranContent(
@@ -51,10 +57,10 @@ class _QuranContent extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(child: _buildHeader(currentSurah)),
+        SliverToBoxAdapter(child: _buildTabBar(context, surahs, currentSurah)),
         SliverToBoxAdapter(
-            child: _buildTabBar(context, surahs, currentSurah)),
-        SliverToBoxAdapter(
-            child: _buildReadingStats(currentPage, surahs.length)),
+          child: _buildReadingStats(currentPage, surahs.length),
+        ),
         SliverToBoxAdapter(child: _buildBrowseSection(context, surahs)),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
@@ -67,8 +73,10 @@ class _QuranContent extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(currentSurah?.nameEnglish ?? 'Al-Quran',
-              style: AppTextStyles.headlineLarge),
+          Text(
+            currentSurah?.nameEnglish ?? 'Al-Quran',
+            style: AppTextStyles.sectionTitle,
+          ),
           if (currentSurah != null)
             Text(
               currentSurah.nameArabic,
@@ -85,8 +93,11 @@ class _QuranContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildTabBar(BuildContext context, List<SurahEntity> surahs,
-      SurahEntity? currentSurah) {
+  Widget _buildTabBar(
+    BuildContext context,
+    List<SurahEntity> surahs,
+    SurahEntity? currentSurah,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: DefaultTabController(
@@ -95,7 +106,7 @@ class _QuranContent extends ConsumerWidget {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: AppColors.backgroundWhite,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.border),
               ),
@@ -123,11 +134,11 @@ class _QuranContent extends ConsumerWidget {
                   ),
                 ],
                 indicator: BoxDecoration(
-                  color: AppColors.primaryGreen,
+                  color: AppColors.primaryAccent,
                   borderRadius: BorderRadius.all(Radius.circular(10)),
                 ),
                 labelColor: Colors.white,
-                unselectedLabelColor: AppColors.textMedium,
+                unselectedLabelColor: AppColors.textSecondary,
                 dividerColor: Colors.transparent,
               ),
             ),
@@ -160,28 +171,31 @@ class _QuranContent extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.skip_previous_outlined),
               onPressed: () {},
-              color: AppColors.textMedium,
+              color: AppColors.textSecondary,
             ),
             Container(
               width: 52,
               height: 52,
               decoration: const BoxDecoration(
-                color: AppColors.primaryGreen,
+                color: AppColors.primaryAccent,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.play_arrow,
-                  color: Colors.white, size: 28),
+              child: const Icon(
+                Icons.play_arrow,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.skip_next_outlined),
               onPressed: () {},
-              color: AppColors.textMedium,
+              color: AppColors.textSecondary,
             ),
             const SizedBox(width: 8),
             OutlinedButton(
               onPressed: () {},
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textMedium,
+                foregroundColor: AppColors.textSecondary,
                 side: const BorderSide(color: AppColors.border),
               ),
               child: const Text('Tafsir'),
@@ -222,24 +236,39 @@ class _QuranContent extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: () {},
-                color: AppColors.textMedium),
-            Text('Page $currentPage of 604',
-                style: AppTextStyles.headlineSmall),
+              icon: const Icon(Icons.chevron_left),
+              onPressed: () {},
+              color: AppColors.textSecondary,
+            ),
+            Text('Page $currentPage of 604', style: AppTextStyles.cardTitle),
             IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: () {},
-                color: AppColors.textMedium),
+              icon: const Icon(Icons.chevron_right),
+              onPressed: () {},
+              color: AppColors.textSecondary,
+            ),
             const Spacer(),
             IconButton(
-                icon: const Icon(Icons.bookmark_border),
-                onPressed: () {},
-                color: AppColors.textMedium),
+              icon: const Icon(Icons.bookmark_border),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const QuranBookmarksScreen(),
+                  ),
+                );
+              },
+              color: AppColors.textSecondary,
+            ),
             IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () {},
-                color: AppColors.textMedium),
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const QuranSearchScreen()),
+                );
+              },
+              color: AppColors.textSecondary,
+            ),
           ],
         ),
         // Search
@@ -248,10 +277,15 @@ class _QuranContent extends ConsumerWidget {
           child: TextField(
             decoration: InputDecoration(
               hintText: 'Search in Quran...',
-              prefixIcon:
-                  const Icon(Icons.search, color: AppColors.textLight, size: 18),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: AppColors.textTertiary,
+                size: 18,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
               isDense: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -278,16 +312,17 @@ class _QuranContent extends ConsumerWidget {
                     width: 44,
                     height: 44,
                     decoration: const BoxDecoration(
-                      color: AppColors.primaryGreen,
+                      color: AppColors.primaryAccent,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Text(
                         '$currentPage',
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -297,18 +332,28 @@ class _QuranContent extends ConsumerWidget {
                     style: AppTextStyles.arabicHeading,
                   ),
                   const SizedBox(height: 16),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFFFE082)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _getPageContent(currentPage),
-                      style: AppTextStyles.arabicBody.copyWith(fontSize: 18),
-                      textDirection: TextDirection.rtl,
-                      textAlign: TextAlign.right,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const QuranReaderScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFFFE082)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _getPageContent(currentPage),
+                        style: AppTextStyles.arabicBody.copyWith(fontSize: 18),
+                        textDirection: TextDirection.rtl,
+                        textAlign: TextAlign.right,
+                      ),
                     ),
                   ),
                 ],
@@ -323,7 +368,8 @@ class _QuranContent extends ConsumerWidget {
   Widget _buildReadingStats(int currentPage, int totalSurahs) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: IslamicCard(
+      child: ClayCard(
+        shadowLevel: ClayShadowLevel.surface,
         child: Row(
           children: [
             _StatItem(
@@ -349,19 +395,22 @@ class _QuranContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildBrowseSection(
-      BuildContext context, List<SurahEntity> surahs) {
+  Widget _buildBrowseSection(BuildContext context, List<SurahEntity> surahs) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 400;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Browse Quran', style: AppTextStyles.headlineSmall),
+          Text('Browse Quran', style: AppTextStyles.cardTitle),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: IslamicCard(
+          if (isCompact)
+            Column(
+              children: [
+                ClayCard(
+                  shadowLevel: ClayShadowLevel.surface,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -369,53 +418,140 @@ class _QuranContent extends ConsumerWidget {
                     ),
                   ),
                   padding: const EdgeInsets.all(20),
-                  child: Column(
+                  child: Row(
                     children: [
                       Container(
                         width: 52,
                         height: 52,
                         decoration: BoxDecoration(
-                          color: AppColors.primaryGreen.withOpacity(0.1),
+                          color: AppColors.primaryAccent.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.format_list_numbered,
-                            color: AppColors.primaryGreen, size: 24),
+                        child: const Icon(
+                          Icons.format_list_numbered,
+                          color: AppColors.primaryAccent,
+                          size: 24,
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      Text('By Surah',
-                          style: AppTextStyles.headlineSmall),
-                      Text('114 Surahs',
-                          style: AppTextStyles.bodySmall),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('By Surah', style: AppTextStyles.cardTitle),
+                            Text('114 Surahs', style: AppTextStyles.bodySmall),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: IslamicCard(
-                  onTap: () {},
+                const SizedBox(height: 12),
+                ClayCard(
+                  shadowLevel: ClayShadowLevel.surface,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const JuzIndexScreen()),
+                  ),
                   padding: const EdgeInsets.all(20),
-                  child: Column(
+                  child: Row(
                     children: [
                       Container(
                         width: 52,
                         height: 52,
                         decoration: BoxDecoration(
-                          color: AppColors.goldAccent.withOpacity(0.1),
+                          color: AppColors.primaryAccent.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.grid_view,
-                            color: AppColors.goldAccent, size: 24),
+                        child: const Icon(
+                          Icons.grid_view,
+                          color: AppColors.primaryAccent,
+                          size: 24,
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      Text('By Juz', style: AppTextStyles.headlineSmall),
-                      Text('30 Juz', style: AppTextStyles.bodySmall),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('By Juz', style: AppTextStyles.cardTitle),
+                            Text('30 Juz', style: AppTextStyles.bodySmall),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: ClayCard(
+                    shadowLevel: ClayShadowLevel.surface,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SurahIndexScreen(surahs: surahs),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryAccent.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.format_list_numbered,
+                            color: AppColors.primaryAccent,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text('By Surah', style: AppTextStyles.cardTitle),
+                        Text('114 Surahs', style: AppTextStyles.bodySmall),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ClayCard(
+                    shadowLevel: ClayShadowLevel.surface,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const JuzIndexScreen()),
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryAccent.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.grid_view,
+                            color: AppColors.primaryAccent,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text('By Juz', style: AppTextStyles.cardTitle),
+                        Text('30 Juz', style: AppTextStyles.bodySmall),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -441,17 +577,20 @@ class _StatItem extends StatelessWidget {
   final String label;
   final String value;
 
-  const _StatItem(
-      {required this.icon, required this.label, required this.value});
+  const _StatItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Column(
         children: [
-          Icon(icon, color: AppColors.primaryGreen, size: 20),
+          Icon(icon, color: AppColors.primaryAccent, size: 20),
           const SizedBox(height: 4),
-          Text(value, style: AppTextStyles.headlineSmall),
+          Text(value, style: AppTextStyles.cardTitle),
           Text(label, style: AppTextStyles.bodySmall),
         ],
       ),
@@ -462,10 +601,6 @@ class _StatItem extends StatelessWidget {
 class _StatDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 40,
-      color: AppColors.divider,
-    );
+    return Container(width: 1, height: 40, color: AppColors.divider);
   }
 }
